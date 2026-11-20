@@ -98,11 +98,17 @@ async function run(action) {
   }
 }
 
+function fold(value) {
+  return value.normalize('NFKC').toLowerCase()
+    .replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))
+    .replace(/[\s・.'’/＆&-]/g, '');
+}
+
 function renderCards() {
-  const query = $("#search").value.trim().normalize("NFKC").toLowerCase();
+  const query = fold($("#search").value);
   const shown = state.products.filter(product =>
     product.code.startsWith(sleeveFilter) &&
-    (product.code + " " + product.name).normalize("NFKC").toLowerCase().includes(query));
+    fold(product.code + " " + product.name).includes(query));
   $("#product-count").textContent = query || sleeveFilter
     ? shown.length + " / " + state.products.length + " 商品"
     : "全 " + state.products.length + " 商品";

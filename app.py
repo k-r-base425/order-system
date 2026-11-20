@@ -20,6 +20,8 @@ import webbrowser
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from catalog_names import READINGS, catalog_name
+
 ROOT = Path(__file__).resolve().parent
 MAX_IMAGE = 12 * 1024 * 1024
 MAX_BODY = 4 * MAX_IMAGE // 3 + 65536
@@ -103,6 +105,11 @@ class Store:
     def seed(self, source):
         with self.transaction(True) as con:
             if con.execute("SELECT COUNT(*) FROM products").fetchone()[0]:
+                updates = [(catalog_name(name), name) for (name,) in con.execute(
+                    "SELECT DISTINCT name FROM products") if name in READINGS]
+                if updates:
+                    con.executemany("UPDATE products SET name=? WHERE name=?", updates)
+                    con.execute("UPDATE state SET revision=revision+1")
                 return
             for sleeve, label, count in [("SS", "半袖", 193), ("LS", "長袖", 85)]:
                 expected = {f"{sleeve}{i:03}" for i in range(1, count + 1)}
@@ -116,7 +123,7 @@ class Store:
                     expected.remove(code)
                     digest = self.save_photo(con, normalized_photo(path.read_bytes()))
                     con.execute("INSERT INTO products VALUES(?,?,?,?,?)",
-                                (code, sleeve, int(code[2:]), name, digest))
+                                (code, sleeve, int(code[2:]), catalog_name(name), digest))
 
     @staticmethod
     def products(con):
@@ -214,7 +221,7 @@ class Store:
                     raise ValueError("袖と商品名（120文字以内）を入力してください。")
                 number = con.execute("SELECT COALESCE(MAX(number),0)+1 FROM products WHERE sleeve=?", (sleeve,)).fetchone()[0]
                 code = f"{sleeve}{number:03}"
-                con.execute("INSERT INTO products VALUES(?,?,?,?,?)", (code,sleeve,number,name.strip(),digest))
+                con.execute("INSERT INTO products VALUES(?,?,?,?,?)", (code,sleeve,number,catalog_name(name.strip()),digest))
             con.execute("UPDATE state SET revision=revision+1")
             return {"code": code}
 

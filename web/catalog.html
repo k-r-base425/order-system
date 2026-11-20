@@ -148,7 +148,11 @@ const filters = Array.from(document.querySelectorAll('[data-filter]'));
 const search = get('#search');
 const detail = get('#detail');
 const visible = () => cards.filter(card => !card.hidden);
-const fold = value => value.normalize('NFKC').toLowerCase().trim();
+function fold(value) {
+  return value.normalize('NFKC').toLowerCase()
+    .replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))
+    .replace(/[\s・.'’/＆&-]/g, '');
+}
 let sleeve = 'all';
 let selected;
 function filterCards() {

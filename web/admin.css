@@ -46,7 +46,6 @@ h2{font-size:21px;line-height:1.35}
 .chip{display:inline-flex;align-items:center;background:#e6f0e6;color:#31503b;border-radius:5px;font-size:11px;line-height:1.6;font-weight:700;padding:1px 6px;white-space:nowrap}
 .chip.long{color:#55405f;background:#f0e9f2}
 .item-name{overflow-wrap:anywhere}
-.card .item-name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .selected{position:absolute;right:8px;top:8px;background:var(--green);color:#fff;font-size:12px;border-radius:25px;padding:4px 9px;box-shadow:0 1px 5px #0002}
 .cart,.box,.history-row{background:var(--white);border:1px solid var(--line);border-radius:14px}
 .cart{position:sticky;top:20px;overflow:hidden}
