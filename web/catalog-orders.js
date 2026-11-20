@@ -22,7 +22,7 @@
   function database() {
     if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
       // GitHub Pages の同一ドメインにある別アプリとは台帳を共有しない。
-      const open = indexedDB.open('band-shirt-test-orders:' + new URL('.', location.href).pathname, 2);
+      const open = indexedDB.open('band-shirt-test-orders:' + new URL('.', location.href).pathname, 3);
       open.onupgradeneeded = event => {
         const db = open.result;
         if (event.oldVersion === 0) {
@@ -35,7 +35,7 @@
         const store = open.transaction.objectStore('draft');
         const request = store.getAll();
         request.onsuccess = () => {
-          const mapping = JSON.parse(get('#previous-codes').textContent);
+          const mapping = JSON.parse(get('#previous-codes').textContent)[event.oldVersion];
           const merged = new Map();
           for (const line of request.result) {
             const product = products.get(mapping[line.code]);

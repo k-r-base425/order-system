@@ -81,7 +81,8 @@ def export_catalog(products, image_bytes, destination):
             )
         template = template.replace("%%ORDER_SCRIPT%%", _TEMPLATE.with_name("catalog-orders.js").read_text(encoding="utf-8"))
         entries = number_map()
-        previous = {row["旧品番"]: row["新品番"] for row in entries}
+        previous = {version: {row[column]: row["新品番"] for row in entries}
+                    for version, column in [(1, "旧品番"), (2, "初回整理後品番")]}
         images = {row["旧品番"]: row["旧写真ID"] for row in entries}
         # file:// で確定した旧注文には、ブラウザ側に写真のコピーがない。
         aliases = {f'images/{row["旧写真ID"]}.jpg': f'images/{images[row["残した旧品番"]]}.jpg'

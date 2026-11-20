@@ -14,7 +14,10 @@ def number_map():
 
 def renumber_reviewed_catalog(con):
     """照合済みの旧台帳だけを、呼び出し元のトランザクション内で更新する。"""
-    if con.execute("PRAGMA user_version").fetchone()[0] != 0:
+    version = con.execute("PRAGMA user_version").fetchone()[0]
+    if version == 1:
+        return merge_white_nirvana(con)
+    if version != 0:
         return False
     entries = number_map()
     prior = {row["旧品番"]: row for row in entries}
@@ -46,5 +49,33 @@ def renumber_reviewed_catalog(con):
                     (code, code[:2], int(code[2:]), row["商品名"], digest))
     con.executemany("INSERT INTO draft VALUES(?,?)", quantities.items())
     con.execute("UPDATE state SET revision=revision+1")
-    con.execute("PRAGMA user_version=1")
+    con.execute("PRAGMA user_version=2")
+    return True
+
+
+def merge_white_nirvana(con):
+    """初回整理後の SS042 を SS004 に統合し、後続の半袖だけを移動する。"""
+    images = dict(con.execute("SELECT code,image FROM products WHERE code IN ('SS004','SS042')"))
+    expected = {r["初回整理後品番"]: r["旧写真ID"] for r in number_map()
+                if r["旧品番"] in ("SS004", "SS043")}
+    if images != expected:
+        return False
+
+    draft = Counter()
+    for code, qty in con.execute("SELECT code,qty FROM draft WHERE substr(code,1,2)='SS'"):
+        if code == "SS042":
+            code = "SS004"
+        elif int(code[2:]) > 42:
+            code = f"SS{int(code[2:]) - 1:03}"
+        draft[code] += qty
+    con.execute("DELETE FROM draft WHERE substr(code,1,2)='SS'")
+    con.execute("DELETE FROM products WHERE code='SS042'")
+    numbers = con.execute("SELECT number FROM products WHERE sleeve='SS' AND number>42 ORDER BY number").fetchall()
+    for (old,) in numbers:
+        new = old - 1
+        con.execute("UPDATE products SET number=?,code=? WHERE sleeve='SS' AND number=?",
+                    (new, f"SS{new:03}", old))
+    con.executemany("INSERT INTO draft VALUES(?,?)", draft.items())
+    con.execute("UPDATE state SET revision=revision+1")
+    con.execute("PRAGMA user_version=2")
     return True
