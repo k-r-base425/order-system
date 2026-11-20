@@ -93,21 +93,53 @@ body:has(dialog[open]){overflow:hidden}
 #order-message{position:fixed;z-index:3;bottom:70px;left:50%;transform:translateX(-50%);width:max-content;max-width:90%;padding:8px 12px;border-radius:8px;background:var(--deep);color:white}
 .form-error{color:#8d3129}
 @media(max-width:400px){.tabs button{padding:8px}.order-line{gap:6px;padding:7px}.order-line img{width:46px}}
+#print-documents{display:none}
+.document-sheet{border:1px solid var(--line);border-top:3px solid var(--deep);border-radius:4px;padding:clamp(12px,3vw,24px);margin:18px 0;background:white;color:var(--ink)}
+.document-sheet h2{font-size:22px;margin:2px 0 16px}
+.document-sheet>small,.document-facts dt,.invoice-line small,.line-cost small{color:var(--muted)}
+.document-facts,.doc-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:10px}
+.document-facts{margin:0 0 20px}
+.document-facts>div{border-bottom:1px solid var(--line);padding:4px 0;min-width:0;overflow-wrap:anywhere}
+.document-facts dt{font-size:12px}
+.document-facts dd{margin:0;font-size:14px}
+.document-sheet h3,.invoice-form h3{font-size:16px;margin:16px 0 8px}
+.doc-line,.invoice-line{display:grid;grid-template-columns:60px minmax(0,1fr) auto;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--line);border-radius:0;margin:0;padding:9px 0}
+.doc-line img,.invoice-line img{width:60px;height:55px;object-fit:contain;background:#f4f3ed}
+.line-cost{text-align:right;font-variant-numeric:tabular-nums}
+.line-cost small,.invoice-line small{display:block}
+.doc-total{padding:10px 12px;text-align:right;background:#e6efe6;border-top:2px solid var(--deep);font-weight:700;margin:12px 0}
+.doc-fields label{font-size:14px;color:var(--muted)}
+.doc-fields input{padding:7px 9px;min-width:0}
+.invoice-line .item-copy{overflow-wrap:anywhere}
+.invoice-qty{display:flex;gap:8px;align-items:center}.invoice-qty output{font-variant-numeric:tabular-nums}
+.invoice-qty button{width:44px;padding:0;touch-action:manipulation}
+.template-link{display:inline-flex;align-items:center;min-height:44px;font-size:14px;text-underline-offset:3px}
+@media(max-width:520px){.doc-line{grid-template-columns:48px minmax(0,1fr)}.doc-line img,.invoice-line img{width:48px}.doc-line .line-cost{grid-column:2;text-align:left;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}.invoice-line{grid-template-columns:48px minmax(0,1fr)}.invoice-qty{grid-column:1/-1;justify-content:flex-end}.invoice-qty strong{margin-left:auto}.order-actions .action{white-space:normal}}
 @media print{
  @page{size:A4 portrait;margin:12mm}
+ :root,body{background:#fff}
  body:has(#order-dialog[open]){overflow:visible}
  body:has(#order-dialog[open])> :not(#order-dialog){display:none!important}
  #order-dialog[open]{position:static;display:block;overflow:visible;width:100%;max-height:none;border:0;box-shadow:none;padding:0;margin:0}
  #order-dialog::backdrop{background:none}
  #order-dialog button,#order-dialog .order-actions{display:none!important}
  .order-line{break-inside:avoid}
+ body:has(#print-documents .document-sheet)>*{display:none!important}
+ body:has(#print-documents .document-sheet)>#print-documents{display:block!important}
+ #print-documents .document-sheet{border:0;border-top:2px solid var(--deep);border-radius:0;padding:0;margin:0;font-size:10pt}
+ #print-documents .document-sheet + .document-sheet{break-before:page}
+ #print-documents .document-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #print-documents .doc-line{display:grid;grid-template-columns:17mm 1fr auto;break-inside:avoid}
+ #print-documents .line-cost{display:block;grid-column:auto;text-align:right}
+ #print-documents .doc-total,#print-documents .document-facts{break-inside:avoid}
+ #print-documents h3{break-after:avoid}
 }
 </style>
 </head>
 <body>
 <header><div class="wrap"><div><h1>バンドTシャツ</h1><p>商品照合一覧</p></div><div class="inventory-count"><b>%%COUNT%%</b> 商品</div></div></header>
 <main class="wrap">
-<nav class="tabs" aria-label="メニュー"><button data-view="catalog" aria-current="page">商品一覧</button><button data-view="create">注文を作る</button><button data-view="history">注文履歴</button></nav>
+<nav class="tabs" aria-label="メニュー"><button data-view="catalog" aria-current="page">商品一覧</button><button data-view="create">注文を作る</button><button data-view="history">注文履歴・帳票</button></nav>
 <p id="test-note" class="test-note" hidden>ここで作る注文はすべてテスト注文です。このブラウザに保存され、仕入先には送信されません。</p>
 <section id="catalog-view">
 <div class="tools">
@@ -120,9 +152,10 @@ body:has(dialog[open]){overflow:hidden}
 <p id="empty" hidden>該当する商品がありません。品番や袖丈を確認してください。</p>
 <button class="action primary" id="cart-bar" hidden>カートを確認</button>
 </section>
-<section id="history-view" hidden><h2>注文履歴</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div></section>
+<section id="history-view" hidden><h2>注文履歴・帳票</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div><a class="template-link" href="document-template.xlsx" download="帳票ひな型.xlsx">見積書・請求書のExcel雛形</a></section>
 <p id="order-message" role="status" hidden></p>
 </main>
+<div id="print-documents"></div>
 <dialog id="detail" aria-labelledby="detail-code" aria-describedby="detail-name">
 <div class="detail-head"><div><div class="meta"><h2 id="detail-code"></h2><span id="detail-sleeve" class="sleeve"></span></div><p id="detail-name"></p></div><button class="action" id="close" autofocus>閉じる</button></div>
 <img id="zoom" alt="">

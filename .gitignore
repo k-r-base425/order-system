@@ -26,3 +26,5 @@
 /照合用一覧/images/*
 !/照合用一覧/images/*.jpg
 !/web/catalog-orders.js
+!/web/catalog-documents.js
+!/照合用一覧/document-template.xlsx

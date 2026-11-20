@@ -79,7 +79,11 @@ def export_catalog(products, image_bytes, destination):
                 f'<span class="{cls}">{sleeve}</span></span>'
                 f'<span class="name">{name}</span></span></button>'
             )
-        template = template.replace("%%ORDER_SCRIPT%%", _TEMPLATE.with_name("catalog-orders.js").read_text(encoding="utf-8"))
+        script = _TEMPLATE.with_name("catalog-orders.js").read_text(encoding="utf-8")
+        documents = _TEMPLATE.with_name("catalog-documents.js").read_text(encoding="utf-8")
+        template = template.replace("%%ORDER_SCRIPT%%", script.replace("/* DOCUMENT_PAGES */", documents))
+        workbook = _TEMPLATE.parent.parent / "帳票ひな型.xlsx"
+        _atomic_file(destination / "document-template.xlsx", workbook.read_bytes())
         entries = number_map()
         previous = {version: {row[column]: row["新品番"] for row in entries}
                     for version, column in [(1, "旧品番"), (2, "初回整理後品番")]}

@@ -77,6 +77,12 @@
     const db = await database();
     return read(db.transaction(store).objectStore(store).getAll());
   }
+  function unitPrice(code) { return code.startsWith('SS') ? 2000 : 2900; }
+  function issueDate(value = new Date()) {
+    const date = new Date(value);
+    return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+  }
+  function yen(value) { return value.toLocaleString('ja-JP') + ' 円'; }
   function qtyTotal(lines) { return lines.reduce((sum, line) => sum + line.qty, 0); }
   function number(id) { return 'TEST-' + String(id).padStart(4,'0'); }
   function dateLabel(created) { return new Date(created).toLocaleString('ja-JP',{dateStyle:'short',timeStyle:'short'}); }
@@ -152,8 +158,7 @@
     get('#pick-back').hidden = get('#pick-save').hidden = !review;
     get('#pick-amount').hidden = !review;
     if (review) {
-      const unitPrice = selected.dataset.code.startsWith('SS') ? 2000 : 2900;
-      get('#pick-amount strong').textContent = (pickQty * unitPrice).toLocaleString('ja-JP') + ' 円';
+      get('#pick-amount strong').textContent = yen(pickQty * unitPrice(selected.dataset.code));
       get('#pick-save').textContent = previousQty ? 'カートの点数を更新' : 'カートに追加';
       if (previousQty) get('#pick-title').textContent = '変更内容の確認';
     }
@@ -230,12 +235,15 @@
       }));
       row.append(edit,remove); body.append(row);
     }
-    body.append(el('p','合計 ' + qtyTotal(draft) + ' 点'));
+    const total = draft.reduce((sum,line) => sum + line.qty * unitPrice(line.code),0);
+    body.append(el('p','合計 ' + qtyTotal(draft) + ' 点　' + yen(total),'doc-total'));
+    const contacts = contactFields({});
+    body.append(contacts.group);
     body.append(el('p','この端末にテスト注文として保存します。仕入先への送信はありません。','test-note'));
     const save = action('テスト注文を確定',() => run(async () => {
       save.disabled = true; save.textContent = '保存中…';
       try {
-        const order = await checkout(draft);
+        const order = await checkout(draft,contacts.values());
         await changeView('history');
         await showOrder(order);
       } finally { save.disabled = false; save.textContent = 'テスト注文を確定'; }
@@ -243,7 +251,7 @@
     body.append(save);
   }
   // 注文時の写真を端末に保存する。画像が差し替わっても履歴は同じ写真を使う。
-  async function checkout(lines) {
+  async function checkout(lines,contacts) {
     if (!lines.length) throw new Error('商品を選んでください。');
     const db = await database();
     const photos = new Map();
@@ -260,7 +268,9 @@
     const tx = db.transaction(['orders','draft','photos'],'readwrite');
     const done = completed(tx);
     const current = tx.objectStore('draft').getAll();
-    const order = {type:'test',created:new Date().toISOString(),items:lines,total:qtyTotal(lines)};
+    const created = new Date().toISOString();
+    const items = lines.map(item => ({...item, unitPrice:unitPrice(item.code)}));
+    const order = {type:'test',created, date:issueDate(created), ...contacts, items,total:qtyTotal(items)};
     current.onsuccess = () => {
       if (JSON.stringify(current.result) !== JSON.stringify(lines)) { tx.abort(); return; }
       photos.forEach((bytes,key) => tx.objectStore('photos').put(bytes,key));
@@ -274,27 +284,7 @@
     draft = []; updateBar();
     return order;
   }
-  async function showOrder(order) {
-    panel('テスト注文 ' + number(order.id));
-    body.append(el('p',dateLabel(order.created) + '　合計 ' + order.total + ' 点'));
-    const db = await database();
-    const photoAliases = JSON.parse(get('#previous-photos').textContent);
-    for (const item of order.items) {
-      const stored = await read(db.transaction('photos').objectStore('photos').get(item.image));
-      const blob = stored instanceof ArrayBuffer ? new Blob([stored], {type:'image/jpeg'}) : stored;
-      const url = blob ? URL.createObjectURL(blob) : item.image;
-      if (blob) photoURLs.push(url);
-      const row = productLine(item,url);
-      if (!blob && photoAliases[item.image]) {
-        const img = row.querySelector('img');
-        img.addEventListener('error', () => { img.src = photoAliases[item.image]; }, {once:true});
-      }
-      body.append(row);
-    }
-    const buttons = el('div',undefined,'order-actions');
-    buttons.append(action('印刷・PDF保存',() => window.print()));
-    body.append(buttons);
-  }
+  /* DOCUMENT_PAGES */
   async function history() {
     const list = get('#history-list');
     const orders = await all('orders');
@@ -304,6 +294,7 @@
       const btn = el('button',undefined,'history-row');
       const label = el('span','テスト注文 ' + number(order.id));
       label.append(el('small',dateLabel(order.created)));
+      label.append(el('small',order.invoice ? '見積書・注文書・請求書' : '見積書・注文書'));
       btn.append(label,el('strong',order.total + ' 点　›'));
       btn.onclick = () => run(() => showOrder(order));
       list.append(btn);
