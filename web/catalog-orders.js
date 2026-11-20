@@ -3,7 +3,10 @@
   const tabs = Array.from(document.querySelectorAll('[data-view]'));
   const orderDialog = get('#order-dialog');
   const body = get('#order-body');
-  const pick = get('#pick');
+  const pickSheet = get('#pick-sheet');
+  const pickOpen = get('#pick-open');
+  let pickQty = 1;
+  let previousQty = 0;
   const products = new Map(cards.map(card => [card.dataset.code, {
     code: card.dataset.code,
     name: card.querySelector('.name').textContent,
@@ -70,7 +73,7 @@
     messageTimer = setTimeout(() => n.hidden = true,3500);
   }
   function errorMessage(text) {
-    const node = orderDialog.open ? get('#order-error') : detail.open ? get('#pick-error') : get('#order-message');
+    const node = orderDialog.open ? get('#order-error') : pickSheet.open ? get('#pick-error') : get('#order-message');
     clearTimeout(messageTimer);
     node.textContent = text;
     node.hidden = false;
@@ -104,23 +107,66 @@
     finally { draft = await all('draft'); updateBar(); }
   }
   function configurePick() {
-    pick.hidden = view !== 'create';
-    get('#pick-error').hidden = true;
-    if (!selected) return;
-    const existing = draft.find(row => row.code === selected.dataset.code)?.qty || 0;
-    pick.elements.qty.value = existing || 1;
-    pick.dataset.previous = existing;
-    pick.querySelector('button').textContent = existing ? '点数を更新' : 'カートに追加';
+    pickOpen.hidden = view !== 'create';
+    const existing = draft.find(row => row.code === selected.dataset.code);
+    pickOpen.textContent = existing ? '注文数を変更（' + existing.qty + '点）' : '注文数を選ぶ';
   }
   detail.addEventListener('productchange',configurePick);
-  pick.onsubmit = event => {
-    event.preventDefault();
-    run(async () => {
-      const code = selected.dataset.code;
-      await changeDraft(code,pick.elements.qty.valueAsNumber,Number(pick.dataset.previous));
-      detail.close(); notice(code + ' をカートに保存しました。');
-    });
+
+  function setPickQty(qty) {
+    pickQty = qty;
+    get('#pick-qty').value = qty.toLocaleString('ja-JP') + ' 点';
+    get('#pick-minus').disabled = qty <= 1;
+    get('#pick-plus').disabled = qty >= 99999;
+  }
+  function showPickStep(review) {
+    get('#pick-title').textContent = review ? '追加内容の確認' : '注文数を選ぶ';
+    get('#pick-minus').hidden = get('#pick-plus').hidden = review;
+    get('#pick-review').hidden = review;
+    get('#pick-back').hidden = get('#pick-save').hidden = !review;
+    get('#pick-amount').hidden = !review;
+    if (review) {
+      const unitPrice = selected.dataset.code.startsWith('SS') ? 2000 : 2900;
+      get('#pick-amount strong').textContent = (pickQty * unitPrice).toLocaleString('ja-JP') + ' 円';
+      get('#pick-save').textContent = previousQty ? 'カートの点数を更新' : 'カートに追加';
+      if (previousQty) get('#pick-title').textContent = '変更内容の確認';
+    }
+    if (pickSheet.open) get('#pick-title').focus();
+  }
+  pickOpen.onclick = () => {
+    const code = selected.dataset.code;
+    const product = products.get(code);
+    previousQty = draft.find(row => row.code === code)?.qty || 0;
+    get('#pick-photo').src = product.image;
+    get('#pick-code').textContent = code;
+    get('#pick-name').textContent = product.name;
+    get('#pick-sleeve').textContent = get('#detail-sleeve').textContent;
+    get('#pick-sleeve').className = get('#detail-sleeve').className;
+    get('#pick-error').hidden = true;
+    setPickQty(previousQty || 1);
+    showPickStep(false);
+    pickSheet.showModal();
   };
+  get('#pick-minus').onclick = () => setPickQty(pickQty - 1);
+  get('#pick-plus').onclick = () => setPickQty(pickQty + 1);
+  get('#pick-close').onclick = () => { if (!busy) pickSheet.close(); };
+  pickSheet.addEventListener('cancel',event => { if (busy) event.preventDefault(); });
+  get('#pick-review').onclick = () => showPickStep(true);
+  get('#pick-back').onclick = () => { if (!busy) showPickStep(false); };
+  get('#pick-save').onclick = () => run(async () => {
+    const code = selected.dataset.code;
+    const save = get('#pick-save');
+    save.disabled = true;
+    try {
+      await changeDraft(code,pickQty,previousQty);
+      pickSheet.close();
+      detail.close();
+      notice(code + ' をカートに保存しました。');
+    } finally {
+      save.disabled = false;
+      configurePick();
+    }
+  });
   function releaseURLs() { photoURLs.forEach(url => URL.revokeObjectURL(url)); photoURLs = []; }
   orderDialog.addEventListener('close',() => { if (!orderDialog.open) releaseURLs(); });
   orderDialog.addEventListener('cancel',event => { if (busy) event.preventDefault(); });
@@ -141,7 +187,7 @@
   }
   function drawCart() {
     panel('テスト注文の確認');
-    if (!draft.length) { body.append(el('p','カートは空です。商品を選び、点数を入力してください。')); return; }
+    if (!draft.length) { body.append(el('p','カートは空です。商品を選び、点数を選んでください。')); return; }
     for (const line of draft) {
       const row = productLine(line,line.image);
       const edit = action('変更',() => {
@@ -181,7 +227,8 @@
         if (exists !== undefined) continue;
         const resp = await fetch(src);
         if (!resp.ok || !resp.headers.get('Content-Type')?.startsWith('image/')) throw new Error('商品写真を取得できません。通信を確認し、もう一度お試しください。');
-        photos.set(src,await resp.blob());
+        // WebKitのプライベート閲覧でも写真を保存できるよう、バイト列を使う。
+        photos.set(src,await resp.arrayBuffer());
       }
     }
     const tx = db.transaction(['orders','draft','photos'],'readwrite');
@@ -190,7 +237,7 @@
     const order = {type:'test',created:new Date().toISOString(),items:lines,total:qtyTotal(lines)};
     current.onsuccess = () => {
       if (JSON.stringify(current.result) !== JSON.stringify(lines)) { tx.abort(); return; }
-      photos.forEach((blob,key) => tx.objectStore('photos').put(blob,key));
+      photos.forEach((bytes,key) => tx.objectStore('photos').put(bytes,key));
       const req = tx.objectStore('orders').add(order);
       req.onsuccess = () => { order.id = req.result; };
       tx.objectStore('draft').clear();
@@ -206,7 +253,8 @@
     body.append(el('p',dateLabel(order.created) + '　合計 ' + order.total + ' 点'));
     const db = await database();
     for (const item of order.items) {
-      const blob = await read(db.transaction('photos').objectStore('photos').get(item.image));
+      const stored = await read(db.transaction('photos').objectStore('photos').get(item.image));
+      const blob = stored instanceof ArrayBuffer ? new Blob([stored], {type:'image/jpeg'}) : stored;
       const url = blob ? URL.createObjectURL(blob) : item.image;
       if (blob) photoURLs.push(url);
       body.append(productLine(item,url));

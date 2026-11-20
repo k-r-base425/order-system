@@ -59,8 +59,27 @@ body:has(dialog[open]){overflow:hidden}
 .order-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
 .primary{background:var(--deep);border-color:var(--deep);color:white}
 #cart-bar{position:sticky;bottom:max(8px,env(safe-area-inset-bottom));width:100%;box-shadow:0 3px 16px #17332833;margin-bottom:12px}
-#pick{padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-#pick input{padding:4px 8px;width:72px;margin-left:6px}
+#pick-open{display:block;width:calc(100% - 32px);margin:12px auto 0}
+#pick-sheet{width:min(440px,calc(100% - 24px));padding:20px;overscroll-behavior:contain}
+#pick-sheet::backdrop{background:#10231b66}
+.pick-heading,.pick-row,.pick-product,.stepper{display:flex;align-items:center;gap:12px}
+.pick-heading,.pick-row{justify-content:space-between}
+.pick-heading h2{font-size:20px}
+.pick-product{margin:14px 0;padding:12px;background:var(--paper);border-radius:10px}
+.pick-product img{width:76px;height:60px;object-fit:contain}
+.pick-row{padding:12px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.stepper{gap:8px}
+.stepper button{width:46px;height:46px;padding:0;font-size:22px;touch-action:manipulation}
+.stepper output{min-width:3ch;text-align:center;font-size:20px;font-weight:700}
+.pick-buttons{display:flex;gap:8px;margin-top:12px}
+.pick-buttons .primary{flex:1}
+@media(max-width:640px){
+ #pick-sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:100%;max-height:calc(100dvh - 12px);border-radius:20px 20px 0 0;padding:16px 18px max(18px,env(safe-area-inset-bottom))}
+}
+@media(max-width:640px) and (prefers-reduced-motion:no-preference){
+ #pick-sheet[open]{animation:pick-rise .22s ease-out}
+ @keyframes pick-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+}
 #history-list{display:grid;gap:10px;margin:12px 0}
 .history-row,.order-line{padding:12px;border:1px solid var(--line);border-radius:10px;background:white}
 .history-row{display:flex;justify-content:space-between;align-items:center;text-align:left;gap:8px}
@@ -107,9 +126,18 @@ body:has(dialog[open]){overflow:hidden}
 <dialog id="detail" aria-labelledby="detail-code" aria-describedby="detail-name">
 <div class="detail-head"><div><div class="meta"><h2 id="detail-code"></h2><span id="detail-sleeve" class="sleeve"></span></div><p id="detail-name"></p></div><button class="action" id="close" autofocus>閉じる</button></div>
 <img id="zoom" alt="">
-<form id="pick" hidden><label>点数<input name="qty" type="number" min="1" max="99999" step="1" value="1" inputmode="numeric" required></label><button class="action primary">カートに反映</button></form>
-<p id="pick-error" class="form-error" role="alert" hidden></p>
+<button type="button" id="pick-open" class="action primary" aria-haspopup="dialog" hidden>注文数を選ぶ</button>
 <div class="detail-foot"><button class="action" id="prev">前の商品</button><span id="position"></span><button class="action" id="next">次の商品</button></div>
+</dialog>
+<dialog id="pick-sheet" aria-labelledby="pick-title">
+<div class="pick-heading"><h2 id="pick-title" tabindex="-1" autofocus>注文数を選ぶ</h2><button class="action" id="pick-close">閉じる</button></div>
+<div class="pick-product"><img id="pick-photo" alt=""><div><div class="meta"><strong class="code" id="pick-code"></strong><span id="pick-sleeve"></span></div><span class="name" id="pick-name"></span></div></div>
+<div class="pick-row"><span>注文数</span><div class="stepper">
+<button class="action" id="pick-minus" aria-label="1点減らす">−</button><output id="pick-qty" aria-label="注文数"></output><button class="action" id="pick-plus" aria-label="1点増やす">＋</button>
+</div></div>
+<div class="pick-row" id="pick-amount" hidden><span>小計</span><strong></strong></div>
+<p id="pick-error" class="form-error" role="alert" hidden></p>
+<div class="pick-buttons"><button class="action" id="pick-back" hidden>点数を変更</button><button class="action primary" id="pick-review">確認する</button><button class="action primary" id="pick-save" hidden>カートに追加</button></div>
 </dialog>
 <dialog id="order-dialog" aria-labelledby="order-title"><div class="detail-head"><h2 id="order-title"></h2><button class="action" id="order-close">閉じる</button></div><div id="order-body"></div><p id="order-error" class="form-error" role="alert" hidden></p></dialog>
 <script>
