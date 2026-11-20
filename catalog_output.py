@@ -76,6 +76,7 @@ def export_catalog(products, image_bytes, destination):
                 f'<span class="{cls}">{sleeve}</span></span>'
                 f'<span class="name">{name}</span></span></button>'
             )
+        template = template.replace("%%ORDER_SCRIPT%%", _TEMPLATE.with_name("catalog-orders.js").read_text(encoding="utf-8"))
         page = template.replace("%%COUNT%%", str(len(catalog))).replace("%%CARDS%%", "\n".join(cards))
         _atomic_file(destination / "index.html", page.encode("utf-8"))
         # 差し替え前の写真は配布フォルダから外す。注文の保存領域とは独立。
