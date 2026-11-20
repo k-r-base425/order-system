@@ -93,21 +93,53 @@ body:has(dialog[open]){overflow:hidden}
 #order-message{position:fixed;z-index:3;bottom:70px;left:50%;transform:translateX(-50%);width:max-content;max-width:90%;padding:8px 12px;border-radius:8px;background:var(--deep);color:white}
 .form-error{color:#8d3129}
 @media(max-width:400px){.tabs button{padding:8px}.order-line{gap:6px;padding:7px}.order-line img{width:46px}}
+#print-documents{display:none}
+.document-sheet{border:1px solid var(--line);border-top:3px solid var(--deep);border-radius:4px;padding:clamp(12px,3vw,24px);margin:18px 0;background:white;color:var(--ink)}
+.document-sheet h2{font-size:22px;margin:2px 0 16px}
+.document-sheet>small,.document-facts dt,.invoice-line small,.line-cost small{color:var(--muted)}
+.document-facts,.doc-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:10px}
+.document-facts{margin:0 0 20px}
+.document-facts>div{border-bottom:1px solid var(--line);padding:4px 0;min-width:0;overflow-wrap:anywhere}
+.document-facts dt{font-size:12px}
+.document-facts dd{margin:0;font-size:14px}
+.document-sheet h3,.invoice-form h3{font-size:16px;margin:16px 0 8px}
+.doc-line,.invoice-line{display:grid;grid-template-columns:60px minmax(0,1fr) auto;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--line);border-radius:0;margin:0;padding:9px 0}
+.doc-line img,.invoice-line img{width:60px;height:55px;object-fit:contain;background:#f4f3ed}
+.line-cost{text-align:right;font-variant-numeric:tabular-nums}
+.line-cost small,.invoice-line small{display:block}
+.doc-total{padding:10px 12px;text-align:right;background:#e6efe6;border-top:2px solid var(--deep);font-weight:700;margin:12px 0}
+.doc-fields label{font-size:14px;color:var(--muted)}
+.doc-fields input{padding:7px 9px;min-width:0}
+.invoice-line .item-copy{overflow-wrap:anywhere}
+.invoice-qty{display:flex;gap:8px;align-items:center}.invoice-qty output{font-variant-numeric:tabular-nums}
+.invoice-qty button{width:44px;padding:0;touch-action:manipulation}
+.template-link{display:inline-flex;align-items:center;min-height:44px;font-size:14px;text-underline-offset:3px}
+@media(max-width:520px){.doc-line{grid-template-columns:48px minmax(0,1fr)}.doc-line img,.invoice-line img{width:48px}.doc-line .line-cost{grid-column:2;text-align:left;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}.invoice-line{grid-template-columns:48px minmax(0,1fr)}.invoice-qty{grid-column:1/-1;justify-content:flex-end}.invoice-qty strong{margin-left:auto}.order-actions .action{white-space:normal}}
 @media print{
  @page{size:A4 portrait;margin:12mm}
+ :root,body{background:#fff}
  body:has(#order-dialog[open]){overflow:visible}
  body:has(#order-dialog[open])> :not(#order-dialog){display:none!important}
  #order-dialog[open]{position:static;display:block;overflow:visible;width:100%;max-height:none;border:0;box-shadow:none;padding:0;margin:0}
  #order-dialog::backdrop{background:none}
  #order-dialog button,#order-dialog .order-actions{display:none!important}
  .order-line{break-inside:avoid}
+ body:has(#print-documents .document-sheet)>*{display:none!important}
+ body:has(#print-documents .document-sheet)>#print-documents{display:block!important}
+ #print-documents .document-sheet{border:0;border-top:2px solid var(--deep);border-radius:0;padding:0;margin:0;font-size:10pt}
+ #print-documents .document-sheet + .document-sheet{break-before:page}
+ #print-documents .document-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #print-documents .doc-line{display:grid;grid-template-columns:17mm 1fr auto;break-inside:avoid}
+ #print-documents .line-cost{display:block;grid-column:auto;text-align:right}
+ #print-documents .doc-total,#print-documents .document-facts{break-inside:avoid}
+ #print-documents h3{break-after:avoid}
 }
 </style>
 </head>
 <body>
 <header><div class="wrap"><div><h1>バンドTシャツ</h1><p>商品照合一覧</p></div><div class="inventory-count"><b>249</b> 商品</div></div></header>
 <main class="wrap">
-<nav class="tabs" aria-label="メニュー"><button data-view="catalog" aria-current="page">商品一覧</button><button data-view="create">注文を作る</button><button data-view="history">注文履歴</button></nav>
+<nav class="tabs" aria-label="メニュー"><button data-view="catalog" aria-current="page">商品一覧</button><button data-view="create">注文を作る</button><button data-view="history">注文履歴・帳票</button></nav>
 <p id="test-note" class="test-note" hidden>ここで作る注文はすべてテスト注文です。このブラウザに保存され、仕入先には送信されません。</p>
 <section id="catalog-view">
 <div class="tools">
@@ -368,9 +400,10 @@ body:has(dialog[open]){overflow:hidden}
 <p id="empty" hidden>該当する商品がありません。品番や袖丈を確認してください。</p>
 <button class="action primary" id="cart-bar" hidden>カートを確認</button>
 </section>
-<section id="history-view" hidden><h2>注文履歴</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div></section>
+<section id="history-view" hidden><h2>注文履歴・帳票</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div><a class="template-link" href="document-template.xlsx" download="帳票ひな型.xlsx">見積書・請求書のExcel雛形</a></section>
 <p id="order-message" role="status" hidden></p>
 </main>
+<div id="print-documents"></div>
 <dialog id="detail" aria-labelledby="detail-code" aria-describedby="detail-name">
 <div class="detail-head"><div><div class="meta"><h2 id="detail-code"></h2><span id="detail-sleeve" class="sleeve"></span></div><p id="detail-name"></p></div><button class="action" id="close" autofocus>閉じる</button></div>
 <img id="zoom" alt="">
@@ -541,6 +574,12 @@ detail.addEventListener('click', e => {
     const db = await database();
     return read(db.transaction(store).objectStore(store).getAll());
   }
+  function unitPrice(code) { return code.startsWith('SS') ? 2000 : 2900; }
+  function issueDate(value = new Date()) {
+    const date = new Date(value);
+    return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+  }
+  function yen(value) { return value.toLocaleString('ja-JP') + ' 円'; }
   function qtyTotal(lines) { return lines.reduce((sum, line) => sum + line.qty, 0); }
   function number(id) { return 'TEST-' + String(id).padStart(4,'0'); }
   function dateLabel(created) { return new Date(created).toLocaleString('ja-JP',{dateStyle:'short',timeStyle:'short'}); }
@@ -616,8 +655,7 @@ detail.addEventListener('click', e => {
     get('#pick-back').hidden = get('#pick-save').hidden = !review;
     get('#pick-amount').hidden = !review;
     if (review) {
-      const unitPrice = selected.dataset.code.startsWith('SS') ? 2000 : 2900;
-      get('#pick-amount strong').textContent = (pickQty * unitPrice).toLocaleString('ja-JP') + ' 円';
+      get('#pick-amount strong').textContent = yen(pickQty * unitPrice(selected.dataset.code));
       get('#pick-save').textContent = previousQty ? 'カートの点数を更新' : 'カートに追加';
       if (previousQty) get('#pick-title').textContent = '変更内容の確認';
     }
@@ -694,12 +732,15 @@ detail.addEventListener('click', e => {
       }));
       row.append(edit,remove); body.append(row);
     }
-    body.append(el('p','合計 ' + qtyTotal(draft) + ' 点'));
+    const total = draft.reduce((sum,line) => sum + line.qty * unitPrice(line.code),0);
+    body.append(el('p','合計 ' + qtyTotal(draft) + ' 点　' + yen(total),'doc-total'));
+    const contacts = contactFields({});
+    body.append(contacts.group);
     body.append(el('p','この端末にテスト注文として保存します。仕入先への送信はありません。','test-note'));
     const save = action('テスト注文を確定',() => run(async () => {
       save.disabled = true; save.textContent = '保存中…';
       try {
-        const order = await checkout(draft);
+        const order = await checkout(draft,contacts.values());
         await changeView('history');
         await showOrder(order);
       } finally { save.disabled = false; save.textContent = 'テスト注文を確定'; }
@@ -707,7 +748,7 @@ detail.addEventListener('click', e => {
     body.append(save);
   }
   // 注文時の写真を端末に保存する。画像が差し替わっても履歴は同じ写真を使う。
-  async function checkout(lines) {
+  async function checkout(lines,contacts) {
     if (!lines.length) throw new Error('商品を選んでください。');
     const db = await database();
     const photos = new Map();
@@ -724,7 +765,9 @@ detail.addEventListener('click', e => {
     const tx = db.transaction(['orders','draft','photos'],'readwrite');
     const done = completed(tx);
     const current = tx.objectStore('draft').getAll();
-    const order = {type:'test',created:new Date().toISOString(),items:lines,total:qtyTotal(lines)};
+    const created = new Date().toISOString();
+    const items = lines.map(item => ({...item, unitPrice:unitPrice(item.code)}));
+    const order = {type:'test',created, date:issueDate(created), ...contacts, items,total:qtyTotal(items)};
     current.onsuccess = () => {
       if (JSON.stringify(current.result) !== JSON.stringify(lines)) { tx.abort(); return; }
       photos.forEach((bytes,key) => tx.objectStore('photos').put(bytes,key));
@@ -738,27 +781,211 @@ detail.addEventListener('click', e => {
     draft = []; updateBar();
     return order;
   }
+    function field(label, type, value) {
+    const wrap = el('label',label);
+    const input = el('input');
+    input.type = type;
+    input.value = value || '';
+    if (type === 'text') input.maxLength = 120;
+    wrap.append(input);
+    return {wrap,input};
+  }
+
+  function contactFields(data) {
+    const group = el('div',undefined,'doc-fields');
+    const to = field('宛名（任意）','text',data.recipient);
+    const from = field('発行者（任意）','text',data.issuer);
+    group.append(to.wrap,from.wrap);
+    return {group, values:() => ({recipient:to.input.value.trim(),issuer:from.input.value.trim()})};
+  }
+
+  function templateLink() {
+    const link = el('a','Excel雛形をダウンロード','template-link');
+    link.href = 'document-template.xlsx';
+    link.download = '帳票ひな型.xlsx';
+    return link;
+  }
+
+  function docNumber(prefix,id) { return prefix + '-TEST-' + String(id).padStart(4,'0'); }
+  function orderDate(order) { return order.date || issueDate(order.created); }
+  function pricedItems(order) {
+    return order.items.map(line => ({...line,unitPrice:line.unitPrice ?? unitPrice(line.code)}));
+  }
+  function amount(lines) { return lines.reduce((sum,line) => sum + line.qty * line.unitPrice,0); }
+
+  async function documentPhotos(order) {
+    const db = await database();
+    const aliases = JSON.parse(get('#previous-photos').textContent);
+    const photos = new Map();
+    for (const src of new Set(order.items.map(item => item.image))) {
+      const stored = await read(db.transaction('photos').objectStore('photos').get(src));
+      const blob = stored instanceof ArrayBuffer ? new Blob([stored],{type:'image/jpeg'}) : stored;
+      const url = blob ? URL.createObjectURL(blob) : src;
+      if (blob) photoURLs.push(url);
+      photos.set(src,{url,fallback:blob ? null : aliases[src]});
+    }
+    return photos;
+  }
+
+  function documentPhoto(item, photos) {
+    const {url,fallback} = photos.get(item.image);
+    const img = el('img');
+    img.alt = item.code + ' の商品写真';
+    if (fallback) img.addEventListener('error',() => { img.src = fallback; },{once:true});
+    img.src = url;
+    return img;
+  }
+
+  function fact(list,label,value) {
+    const entry = el('div');
+    entry.append(el('dt',label),el('dd',value || '—'));
+    list.append(entry);
+  }
+
+  function sheet(title, order, lines, photos, invoice) {
+    const page = el('article',undefined,'document-sheet');
+    const date = invoice?.date || orderDate(order);
+    const contacts = invoice || order;
+    const facts = el('dl',undefined,'document-facts');
+    fact(facts,'注文番号',number(order.id));
+    fact(facts,'見積番号',docNumber('QT',order.id));
+    if (invoice) fact(facts,'請求番号',docNumber('INV',order.id));
+    fact(facts,'発行日',date);
+    fact(facts,'宛名',contacts.recipient);
+    fact(facts,'発行者',contacts.issuer);
+    page.append(el('small','テスト注文'),el('h2',title),facts);
+    const list = el('div',undefined,'document-items');
+    for (const item of lines) {
+      const row = el('div',undefined,'doc-line order-line');
+      const copy = el('div',undefined,'item-copy');
+      copy.append(el('strong',item.code),el('small',item.name),el('small',(invoice ? '請求日 ' : '注文日 ') + date));
+      const cost = el('div',undefined,'line-cost');
+      cost.append(el('small',item.qty.toLocaleString('ja-JP') + ' 点 × ' + yen(item.unitPrice)),
+                  el('strong','小計 ' + yen(item.qty * item.unitPrice)));
+      row.append(documentPhoto(item,photos),copy,cost);
+      list.append(row);
+    }
+    page.append(el('h3','商品明細'),list,el('p','合計 ' + qtyTotal(lines).toLocaleString('ja-JP') + ' 点　' + yen(amount(lines)),'doc-total'));
+    return page;
+  }
+
+  function preparePrint() {
+    const target = get('#print-documents');
+    target.replaceChildren(...Array.from(body.querySelectorAll('.document-sheet'),node => node.cloneNode(true)));
+  }
+  window.addEventListener('beforeprint',preparePrint);
+  function printDocuments() {
+    preparePrint();
+    window.print();
+  }
+  // Safari の印刷プレビューを閉じた後も、画面では元の帳票を使う。
+  window.addEventListener('afterprint',() => get('#print-documents').replaceChildren());
+
+  function docActions() {
+    const actions = el('div',undefined,'order-actions');
+    body.append(actions);
+    return actions;
+  }
+
   async function showOrder(order) {
     panel('テスト注文 ' + number(order.id));
-    body.append(el('p',dateLabel(order.created) + '　合計 ' + order.total + ' 点'));
-    const db = await database();
-    const photoAliases = JSON.parse(get('#previous-photos').textContent);
-    for (const item of order.items) {
-      const stored = await read(db.transaction('photos').objectStore('photos').get(item.image));
-      const blob = stored instanceof ArrayBuffer ? new Blob([stored], {type:'image/jpeg'}) : stored;
-      const url = blob ? URL.createObjectURL(blob) : item.image;
-      if (blob) photoURLs.push(url);
-      const row = productLine(item,url);
-      if (!blob && photoAliases[item.image]) {
-        const img = row.querySelector('img');
-        img.addEventListener('error', () => { img.src = photoAliases[item.image]; }, {once:true});
-      }
-      body.append(row);
-    }
-    const buttons = el('div',undefined,'order-actions');
-    buttons.append(action('印刷・PDF保存',() => window.print()));
-    body.append(buttons);
+    const photos = await documentPhotos(order);
+    const actions = docActions();
+    actions.append(action('見積書・注文書をPDF保存／印刷',printDocuments,true),
+      action(order.invoice ? '請求書を開く' : '請求書を作成',() => run(() =>
+        order.invoice ? showInvoice(order) : editInvoice(order))),templateLink());
+    const lines = pricedItems(order);
+    body.append(sheet('見積書',order,lines,photos),sheet('注文書（写真付き注文リスト）',order,lines,photos));
   }
+
+  async function showInvoice(order) {
+    panel('請求書 ' + docNumber('INV',order.id));
+    const photos = await documentPhotos(order);
+    docActions().append(action('請求書をPDF保存／印刷',printDocuments,true),
+      action('見積書・注文書へ',() => run(() => showOrder(order))),templateLink());
+    const billed = new Map(order.invoice.items.map(line => [line.code,line]));
+    const lines = pricedItems(order).filter(line => billed.has(line.code)).map(line => ({...line,...billed.get(line.code)}));
+    body.append(sheet('請求書',order,lines,photos,order.invoice));
+  }
+
+  async function saveInvoice(order,invoice) {
+    const db = await database();
+    const tx = db.transaction('orders','readwrite');
+    const done = completed(tx);
+    const store = tx.objectStore('orders');
+    const request = store.get(order.id);
+    let latest;
+    request.onsuccess = () => {
+      latest = request.result;
+      if (!latest) { tx.abort(); return; }
+      if (!latest.invoice) {
+        latest.invoice = invoice;
+        store.put(latest);
+      }
+    };
+    await done;
+    return latest;
+  }
+
+  async function editInvoice(order) {
+    panel('請求書を作成');
+    const photos = await documentPhotos(order);
+    const lines = pricedItems(order);
+    body.append(el('p','注文 ' + number(order.id) + ' ／ 見積 ' + docNumber('QT',order.id),'results'));
+    const form = el('form',undefined,'invoice-form');
+    const contacts = contactFields(order);
+    const date = field('請求書の発行日','date',issueDate());
+    date.input.required = true;
+    contacts.group.append(date.wrap);
+    form.append(contacts.group,el('h3','請求する商品'));
+    const total = el('p',undefined,'doc-total');
+    const save = el('button','テスト請求書を発行','action primary');
+    save.type = 'submit';
+    const updateTotal = () => {
+      total.textContent = '請求合計 ' + qtyTotal(lines).toLocaleString('ja-JP') + ' 点　' + yen(amount(lines));
+      save.disabled = !qtyTotal(lines);
+    };
+    for (const line of lines) {
+      const row = el('div',undefined,'invoice-line');
+      const copy = el('div',undefined,'item-copy');
+      copy.append(el('strong',line.code),el('small',line.name),el('small','単価 ' + yen(line.unitPrice)));
+      const controls = el('div',undefined,'invoice-qty');
+      const count = el('output');
+      const sub = el('strong');
+      const limit = line.qty;
+      const adjust = delta => { line.qty += delta; render(); updateTotal(); };
+      const minus = action('−',() => adjust(-1));
+      const plus = action('＋',() => adjust(1));
+      minus.setAttribute('aria-label',line.code + ' の請求点数を減らす');
+      plus.setAttribute('aria-label',line.code + ' の請求点数を増やす');
+      function render() {
+        count.value = line.qty + ' 点';
+        sub.textContent = yen(line.qty * line.unitPrice);
+        minus.disabled = line.qty === 0;
+        plus.disabled = line.qty === limit;
+      }
+      controls.append(minus,count,plus,sub);
+      row.append(documentPhoto(line,photos),copy,controls);
+      form.append(row);
+      render();
+    }
+    updateTotal();
+    const actions = el('div',undefined,'order-actions');
+    actions.append(save,action('見積書・注文書に戻る',() => run(() => showOrder(order))));
+    form.append(total,actions);
+    form.onsubmit = event => {
+      event.preventDefault();
+      if (!date.input.value || !qtyTotal(lines)) return;
+      run(async () => {
+        const items = lines.filter(line => line.qty > 0).map(({code,qty,unitPrice}) => ({code,qty,unitPrice}));
+        const latest = await saveInvoice(order,{date:date.input.value,...contacts.values(),items});
+        await history();
+        await showInvoice(latest);
+      });
+    };
+    body.append(form);
+  }
+
   async function history() {
     const list = get('#history-list');
     const orders = await all('orders');
@@ -768,6 +995,7 @@ detail.addEventListener('click', e => {
       const btn = el('button',undefined,'history-row');
       const label = el('span','テスト注文 ' + number(order.id));
       label.append(el('small',dateLabel(order.created)));
+      label.append(el('small',order.invoice ? '見積書・注文書・請求書' : '見積書・注文書'));
       btn.append(label,el('strong',order.total + ' 点　›'));
       btn.onclick = () => run(() => showOrder(order));
       list.append(btn);
