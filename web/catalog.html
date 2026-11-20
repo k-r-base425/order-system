@@ -212,6 +212,8 @@ detail.addEventListener('click', e => {
   if (e.target === detail && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) detail.close();
 });
 </script>
+<script type="application/json" id="previous-photos">%%PREVIOUS_PHOTOS%%</script>
+<script type="application/json" id="previous-codes">%%PREVIOUS_CODES%%</script>
 <script>%%ORDER_SCRIPT%%</script>
 </body>
 </html>

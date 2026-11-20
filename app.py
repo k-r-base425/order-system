@@ -21,6 +21,7 @@ import webbrowser
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from catalog_names import READINGS, catalog_name
+from catalog_numbers import renumber_reviewed_catalog
 
 ROOT = Path(__file__).resolve().parent
 MAX_IMAGE = 12 * 1024 * 1024
@@ -105,6 +106,8 @@ class Store:
     def seed(self, source):
         with self.transaction(True) as con:
             if con.execute("SELECT COUNT(*) FROM products").fetchone()[0]:
+                if renumber_reviewed_catalog(con):
+                    return True
                 updates = [(catalog_name(name), name) for (name,) in con.execute(
                     "SELECT DISTINCT name FROM products") if name in READINGS]
                 if updates:
@@ -124,6 +127,8 @@ class Store:
                     digest = self.save_photo(con, normalized_photo(path.read_bytes()))
                     con.execute("INSERT INTO products VALUES(?,?,?,?,?)",
                                 (code, sleeve, int(code[2:]), catalog_name(name), digest))
+
+            return renumber_reviewed_catalog(con)
 
     @staticmethod
     def products(con):
@@ -355,8 +360,8 @@ def main():
     parser.add_argument("--test",action="store_true",help="検証台帳の注文書にテスト表示を付ける")
     args = parser.parse_args()
     store = Store(args.data)
-    store.seed(args.source)
-    if args.export_only or not (args.catalog/"index.html").is_file():
+    renumbered = store.seed(args.source)
+    if renumbered or args.export_only or not (args.catalog/"index.html").is_file():
         result = store.export(args.catalog)
         print(f"照合用一覧に{result['count']}商品を出力しました。",flush=True)
     if args.export_only:

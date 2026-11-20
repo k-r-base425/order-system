@@ -3,11 +3,14 @@
 import fcntl
 import html
 import io
+import json
 import os
 import re
 import tempfile
 import threading
 from pathlib import Path
+
+from catalog_numbers import number_map
 
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
@@ -77,6 +80,14 @@ def export_catalog(products, image_bytes, destination):
                 f'<span class="name">{name}</span></span></button>'
             )
         template = template.replace("%%ORDER_SCRIPT%%", _TEMPLATE.with_name("catalog-orders.js").read_text(encoding="utf-8"))
+        entries = number_map()
+        previous = {row["旧品番"]: row["新品番"] for row in entries}
+        images = {row["旧品番"]: row["旧写真ID"] for row in entries}
+        # file:// で確定した旧注文には、ブラウザ側に写真のコピーがない。
+        aliases = {f'images/{row["旧写真ID"]}.jpg': f'images/{images[row["残した旧品番"]]}.jpg'
+                   for row in entries if row["旧写真ID"] != images[row["残した旧品番"]]}
+        template = template.replace("%%PREVIOUS_PHOTOS%%", json.dumps(aliases, separators=(",", ":")))
+        template = template.replace("%%PREVIOUS_CODES%%", json.dumps(previous, separators=(",", ":")))
         page = template.replace("%%COUNT%%", str(len(catalog))).replace("%%CARDS%%", "\n".join(cards))
         _atomic_file(destination / "index.html", page.encode("utf-8"))
         # 差し替え前の写真は配布フォルダから外す。注文の保存領域とは独立。

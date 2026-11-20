@@ -22,14 +22,40 @@
   function database() {
     if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
       // GitHub Pages の同一ドメインにある別アプリとは台帳を共有しない。
-      const open = indexedDB.open('band-shirt-test-orders:' + new URL('.', location.href).pathname, 1);
-      open.onupgradeneeded = () => {
+      const open = indexedDB.open('band-shirt-test-orders:' + new URL('.', location.href).pathname, 2);
+      open.onupgradeneeded = event => {
         const db = open.result;
-        db.createObjectStore('draft', {keyPath:'code'});
-        db.createObjectStore('orders', {keyPath:'id', autoIncrement:true});
-        db.createObjectStore('photos');
+        if (event.oldVersion === 0) {
+          db.createObjectStore('draft', {keyPath:'code'});
+          db.createObjectStore('orders', {keyPath:'id', autoIncrement:true});
+          db.createObjectStore('photos');
+          return;
+        }
+        // 旧カートだけを変換する。確定済みの注文・写真は当時のままにする。
+        const store = open.transaction.objectStore('draft');
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const mapping = JSON.parse(get('#previous-codes').textContent);
+          const merged = new Map();
+          for (const line of request.result) {
+            const product = products.get(mapping[line.code]);
+            if (!product) {
+              open.transaction.abort();
+              return;
+            }
+            const qty = (merged.get(product.code)?.qty || 0) + line.qty;
+            merged.set(product.code, {...product, qty});
+          }
+          store.clear();
+          for (const line of merged.values()) store.put(line);
+        };
       };
-      open.onsuccess = () => resolve(open.result);
+      open.onblocked = () => errorMessage('以前の注文画面をほかのタブで開いている場合は、そのタブを閉じてください。');
+      open.onsuccess = () => {
+        const db = open.result;
+        db.onversionchange = () => { db.close(); dbPromise = null; };
+        resolve(db);
+      };
       open.onerror = () => reject(open.error);
     }).catch(error => { dbPromise = null; throw error; });
     return dbPromise;
@@ -252,12 +278,18 @@
     panel('テスト注文 ' + number(order.id));
     body.append(el('p',dateLabel(order.created) + '　合計 ' + order.total + ' 点'));
     const db = await database();
+    const photoAliases = JSON.parse(get('#previous-photos').textContent);
     for (const item of order.items) {
       const stored = await read(db.transaction('photos').objectStore('photos').get(item.image));
       const blob = stored instanceof ArrayBuffer ? new Blob([stored], {type:'image/jpeg'}) : stored;
       const url = blob ? URL.createObjectURL(blob) : item.image;
       if (blob) photoURLs.push(url);
-      body.append(productLine(item,url));
+      const row = productLine(item,url);
+      if (!blob && photoAliases[item.image]) {
+        const img = row.querySelector('img');
+        img.addEventListener('error', () => { img.src = photoAliases[item.image]; }, {once:true});
+      }
+      body.append(row);
     }
     const buttons = el('div',undefined,'order-actions');
     buttons.append(action('印刷・PDF保存',() => window.print()));
