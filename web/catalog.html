@@ -62,9 +62,8 @@ body:has(dialog[open]){overflow:hidden}
 #pick{padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 #pick input{padding:4px 8px;width:72px;margin-left:6px}
 #history-list{display:grid;gap:10px;margin:12px 0}
-.history-row,.sample,.order-line{padding:12px;border:1px solid var(--line);border-radius:10px;background:white}
+.history-row,.order-line{padding:12px;border:1px solid var(--line);border-radius:10px;background:white}
 .history-row{display:flex;justify-content:space-between;align-items:center;text-align:left;gap:8px}
-.sample{display:inline-block;color:var(--deep);margin:10px 0}
 .order-line{display:flex;align-items:center;gap:10px;margin:7px 0}
 .order-line img{width:60px;height:68px;object-fit:contain;background:#eee}
 .order-line .item-copy{flex:1;min-width:0;overflow-wrap:anywhere}
@@ -102,7 +101,7 @@ body:has(dialog[open]){overflow:hidden}
 <p id="empty" hidden>該当する商品がありません。品番や袖丈を確認してください。</p>
 <button class="action primary" id="cart-bar" hidden>カートを確認</button>
 </section>
-<section id="history-view" hidden><h2>注文履歴</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div><a class="sample" href="https://github.com/k-r-base425/order-system/blob/main/検証見本/PO-0001_見積書と写真付き注文書_試算.pdf" target="_blank" rel="noopener noreferrer">初回テスト注文の見本PDF（36点） ↗</a></section>
+<section id="history-view" hidden><h2>注文履歴</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div></section>
 <p id="order-message" role="status" hidden></p>
 </main>
 <dialog id="detail" aria-labelledby="detail-code" aria-describedby="detail-name">
