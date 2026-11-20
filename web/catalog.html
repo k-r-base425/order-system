@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>バンドTシャツ｜商品照合一覧</title>
+<style>
+:root{color-scheme:light;--ink:#173328;--muted:#53655c;--line:#cfdbcf;--deep:#153b2f;--paper:#f7f8f3;--lime:#e2f399;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--ink);background:var(--paper)}
+*{box-sizing:border-box}
+body,h1,h2,p{margin:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #407395;outline-offset:3px}
+[hidden]{display:none!important}
+header{background:var(--deep);color:#fff}
+.wrap{width:min(100% - 40px,1240px);margin-inline:auto}
+header .wrap{min-height:130px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+h1{font-size:clamp(25px,3.7vw,40px);letter-spacing:.01em;line-height:1.25}
+header p{font-size:14px;color:#deeadf;margin-top:5px}
+.inventory-count{font-weight:700;font-size:18px;white-space:nowrap;color:var(--lime);font-variant-numeric:tabular-nums}
+.inventory-count b{font-size:30px}
+.tools{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:24px 0 18px}
+.searchbox{position:relative;display:block;flex:0 1 380px}
+.searchbox:before{content:"";position:absolute;top:15px;left:16px;width:11px;height:11px;border:2px solid #53655c;border-radius:50%;pointer-events:none}
+.searchbox:after{content:"";position:absolute;top:28px;left:28px;width:7px;height:2px;background:#53655c;transform:rotate(45deg);pointer-events:none}
+input{min-height:48px;width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px 8px 43px}
+input::placeholder{color:#586a60}
+.filters{display:flex;gap:3px;border:1px solid var(--line);border-radius:10px;background:#e9eee7;padding:3px}
+.filters button{padding:4px 16px;min-height:40px;border:0;border-radius:7px;background:transparent;font-size:14px;font-weight:650}
+.filters button[aria-pressed="true"]{color:#fff;background:var(--deep)}
+.results{margin-bottom:10px;font-size:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:17px;margin-bottom:48px}
+.card{min-width:0;width:100%;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left}
+.card:hover,.card:focus-visible{border-color:#50725f;box-shadow:0 2px 8px #12332118}
+.photo{width:100%;aspect-ratio:4 / 3;background:#e8e7df;display:block;object-fit:contain}
+.info{display:block;padding:12px}
+.meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.code{font:700 18px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.01em}
+.sleeve{font-size:12px;line-height:1.5;font-weight:650;border-radius:4px;padding:1px 6px;color:#2e5843;background:#e6efe6}
+.sleeve.long{color:#583b68;background:#f0e8f4}
+.name{display:block;margin-top:6px;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+#empty{padding:22px 0;color:var(--muted)}
+dialog{width:min(640px,calc(100% - 24px));max-width:none;max-height:calc(100dvh - 24px);padding:0;border:0;border-radius:15px;color:var(--ink);background:#fff;box-shadow:0 20px 70px #12332142}
+dialog::backdrop{background:#10231bba}
+body:has(dialog[open]){overflow:hidden}
+.detail-head, .detail-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px}
+.detail-head h2{font:700 23px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
+.detail-head p{font-size:14px;overflow-wrap:anywhere;margin-top:4px}
+#zoom{display:block;width:100%;height:auto;max-height:62dvh;object-fit:contain;background:#e8e7df}
+.action{background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 14px;min-height:44px;font-weight:650;white-space:nowrap}
+.action:disabled{opacity:.4;cursor:default}
+#position{font-size:13px;color:var(--muted)}
+@media(max-width:640px){.wrap{width:calc(100% - 28px)}header .wrap{min-height:100px;gap:10px}.inventory-count{font-size:14px}.inventory-count b{font-size:23px}.tools{margin:16px 0 12px;gap:10px}.searchbox{flex-basis:100%}.filters{width:100%}.filters button{flex:1}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.info{padding:9px}.code{font-size:16px}.name{font-size:13px}.detail-head,.detail-foot{padding:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div><h1>バンドTシャツ</h1><p>商品照合一覧</p></div><div class="inventory-count"><b>%%COUNT%%</b> 商品</div></div></header>
+<main class="wrap">
+<div class="tools">
+<label class="searchbox"><input id="search" type="search" placeholder="品番・商品名で検索" aria-label="品番・商品名で検索" autocomplete="off" spellcheck="false"></label>
+<div class="filters" role="group" aria-label="袖丈で絞り込み">
+<button data-filter="all" aria-pressed="true">すべて</button><button data-filter="SS" aria-pressed="false">半袖</button><button data-filter="LS" aria-pressed="false">長袖</button>
+</div></div>
+<p id="results" class="results" role="status">%%COUNT%% 件を表示</p>
+<div id="grid" class="grid">%%CARDS%%</div>
+<p id="empty" hidden>該当する商品がありません。品番や袖丈を確認してください。</p>
+</main>
+<dialog id="detail" aria-labelledby="detail-code" aria-describedby="detail-name">
+<div class="detail-head"><div><div class="meta"><h2 id="detail-code"></h2><span id="detail-sleeve" class="sleeve"></span></div><p id="detail-name"></p></div><button class="action" id="close" autofocus>閉じる</button></div>
+<img id="zoom" alt="">
+<div class="detail-foot"><button class="action" id="prev">前の商品</button><span id="position"></span><button class="action" id="next">次の商品</button></div>
+</dialog>
+<script>
+'use strict';
+const get = s => document.querySelector(s);
+const cards = Array.from(document.querySelectorAll('.card'));
+const filters = Array.from(document.querySelectorAll('[data-filter]'));
+const search = get('#search');
+const detail = get('#detail');
+const visible = () => cards.filter(card => !card.hidden);
+const fold = value => value.normalize('NFKC').toLowerCase().trim();
+let sleeve = 'all';
+let selected;
+function filterCards() {
+  const term = fold(search.value);
+  let count = 0;
+  for (const card of cards) {
+    card.hidden = !(sleeve === 'all' || card.dataset.code.startsWith(sleeve)) ||
+      !fold(card.dataset.code + ' ' + card.querySelector('.name').textContent).includes(term);
+    if (!card.hidden) count++;
+  }
+  get('#results').textContent = count + ' 件を表示';
+  get('#empty').hidden = count !== 0;
+}
+for (const button of filters) button.addEventListener('click', () => {
+  sleeve = button.dataset.filter;
+  for (const b of filters) b.setAttribute('aria-pressed', String(b === button));
+  filterCards();
+});
+search.addEventListener('input', filterCards);
+function show(card) {
+  selected = card;
+  const shown = visible();
+  const n = shown.indexOf(card);
+  const code = card.dataset.code;
+  const name = card.querySelector('.name').textContent;
+  const tag = card.querySelector('.sleeve');
+  get('#detail-code').textContent = code;
+  get('#detail-sleeve').textContent = tag.textContent;
+  get('#detail-sleeve').className = tag.className;
+  get('#detail-name').textContent = name;
+  get('#zoom').src = card.querySelector('img').getAttribute('src');
+  get('#zoom').alt = code + ' ' + name + ' の拡大写真';
+  get('#position').textContent = (n + 1) + ' / ' + shown.length;
+  get('#prev').disabled = n === 0;
+  get('#next').disabled = n === shown.length - 1;
+  if (!detail.open) detail.showModal();
+}
+function step(d) {
+  const shown = visible();
+  const card = shown[shown.indexOf(selected) + d];
+  if (card) show(card);
+}
+get('#grid').addEventListener('click', event => {
+  const card = event.target.closest('.card');
+  if (card) show(card);
+});
+get('#close').addEventListener('click', () => detail.close());
+get('#prev').addEventListener('click', () => step(-1));
+get('#next').addEventListener('click', () => step(1));
+detail.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') step(-1);
+  if (e.key === 'ArrowRight') step(1);
+});
+detail.addEventListener('click', e => {
+  const r = detail.getBoundingClientRect();
+  if (e.target === detail && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) detail.close();
+});
+</script>
+</body>
+</html>

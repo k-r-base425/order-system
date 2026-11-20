@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#183a32">
+  <title>バンドTシャツ｜注文台帳</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <span class="brand"><i aria-hidden="true"></i> バンドTシャツ</span>
+    <nav aria-label="注文台帳の操作">
+      <button data-tab="shop" aria-current="page">注文を作る</button>
+      <button data-tab="history">注文履歴</button>
+      <button data-tab="manage">商品管理</button>
+    </nav>
+    <a class="catalog-link" href="/catalog/index.html" target="_blank" rel="noopener">照合用一覧 <span aria-hidden="true">↗</span></a>
+  </div>
+</header>
+<noscript>操作にはJavaScriptを有効にしてください。</noscript>
+<div id="notice" role="status" aria-live="polite" hidden></div>
+<main>
+  <section id="shop" class="view">
+    <div class="shop-grid">
+      <div>
+        <div class="page-title"><h1>商品を選ぶ</h1><span id="product-count" aria-live="polite"></span></div>
+        <div class="toolbar">
+          <div class="pills" role="group" aria-label="袖で絞り込み">
+            <button data-sleeve="" aria-pressed="true">すべて</button>
+            <button data-sleeve="SS" aria-pressed="false">半袖</button>
+            <button data-sleeve="LS" aria-pressed="false">長袖</button>
+          </div>
+          <label class="search"><i aria-hidden="true"></i><input id="search" type="search" placeholder="品番・商品名で検索" aria-label="品番・商品名で検索"></label>
+        </div>
+        <div id="cards" class="cards"></div>
+      </div>
+      <aside class="cart" aria-labelledby="cart-title">
+        <div class="cart-head"><h2 id="cart-title">カート</h2><span id="save-status"></span></div>
+        <div id="cart-lines"></div>
+        <div class="cart-foot">
+          <div class="total"><span>合計点数</span><strong id="cart-total">0 点</strong></div>
+          <button class="primary wide" id="review" disabled>注文内容を確認 <span aria-hidden="true">→</span></button>
+        </div>
+      </aside>
+    </div>
+  </section>
+  <section id="history" class="view narrow" hidden>
+    <div class="page-title"><h1>注文履歴</h1></div>
+    <div id="history-list"></div>
+  </section>
+  <section id="manage" class="view narrow" hidden>
+    <div class="page-title"><h1>商品管理</h1></div>
+    <div class="manage-grid">
+      <section class="box">
+        <h2>商品と写真の更新</h2>
+        <div class="pills editing" role="group" aria-label="更新の種類">
+          <button data-edit="replace" aria-pressed="true">写真差し替え</button>
+          <button data-edit="new" aria-pressed="false">新商品追加</button>
+        </div>
+        <form id="product-form">
+          <label id="replace-field">商品を選択<select id="replace-code" required></select></label>
+          <div id="new-fields" hidden>
+            <label>袖の種類<select id="new-sleeve"><option value="SS">半袖</option><option value="LS">長袖</option></select></label>
+            <label>商品名<input id="new-name" type="text" maxlength="120"></label>
+          </div>
+          <label>商品写真<input id="photo-file" type="file" accept="image/jpeg,image/png" required></label>
+          <img id="photo-preview" class="file-preview" alt="選択した写真" hidden>
+          <button id="update-product" class="primary" type="submit">写真を差し替える</button>
+        </form>
+      </section>
+      <section class="box">
+        <h2>照合用一覧の更新</h2>
+        <p>現在の台帳から、スマホで閲覧する商品一覧と写真をローカルに出力します。</p>
+        <button id="export" class="secondary">照合用一覧を再出力</button>
+        <a class="text-link" href="/catalog/index.html" target="_blank" rel="noopener">出力した一覧を開く ↗</a>
+      </section>
+    </div>
+  </section>
+</main>
+<dialog id="dialog" aria-labelledby="dialog-title">
+  <div class="dialog-top"><h2 id="dialog-title"></h2><button id="close-dialog" aria-label="閉じる">×</button></div>
+  <div id="dialog-body"></div>
+  <p id="dialog-message" role="status" hidden></p>
+</dialog>
+</body>
+</html>
