@@ -8,7 +8,7 @@
 :root{color-scheme:light;--ink:#173328;--muted:#53655c;--line:#cfdbcf;--deep:#153b2f;--paper:#f7f8f3;--lime:#e2f399;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:var(--ink);background:var(--paper)}
 *{box-sizing:border-box}
 body,h1,h2,p{margin:0}
-button,input{font:inherit;color:inherit}
+button,input,a{font:inherit;color:inherit}
 button{cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid #407395;outline-offset:3px}
 [hidden]{display:none!important}
@@ -51,11 +51,47 @@ body:has(dialog[open]){overflow:hidden}
 .action:disabled{opacity:.4;cursor:default}
 #position{font-size:13px;color:var(--muted)}
 @media(max-width:640px){.wrap{width:calc(100% - 28px)}header .wrap{min-height:100px;gap:10px}.inventory-count{font-size:14px}.inventory-count b{font-size:23px}.tools{margin:16px 0 12px;gap:10px}.searchbox{flex-basis:100%}.filters{width:100%}.filters button{flex:1}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.info{padding:9px}.code{font-size:16px}.name{font-size:13px}.detail-head,.detail-foot{padding:12px}}
+
+.tabs{display:flex;gap:5px;margin:18px 0 12px;border-bottom:1px solid var(--line)}
+.tabs button{background:transparent;color:var(--muted);border:0;border-bottom:3px solid transparent;padding:9px 12px;min-height:44px;font-weight:700}
+.tabs button[aria-current="page"]{color:var(--deep);border-color:var(--deep)}
+.test-note{background:#ecf1df;border-radius:10px;padding:10px 14px;font-size:14px;margin:10px 0}
+.order-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.primary{background:var(--deep);border-color:var(--deep);color:white}
+#cart-bar{position:sticky;bottom:max(8px,env(safe-area-inset-bottom));width:100%;box-shadow:0 3px 16px #17332833;margin-bottom:12px}
+#pick{padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#pick input{padding:4px 8px;width:72px;margin-left:6px}
+#history-list{display:grid;gap:10px;margin:12px 0}
+.history-row,.sample,.order-line{padding:12px;border:1px solid var(--line);border-radius:10px;background:white}
+.history-row{display:flex;justify-content:space-between;align-items:center;text-align:left;gap:8px}
+.sample{display:inline-block;color:var(--deep);margin:10px 0}
+.order-line{display:flex;align-items:center;gap:10px;margin:7px 0}
+.order-line img{width:60px;height:68px;object-fit:contain;background:#eee}
+.order-line .item-copy{flex:1;min-width:0;overflow-wrap:anywhere}
+.order-line small,.history-row small{display:block;color:var(--muted)}
+.order-line input{padding:5px;width:62px}
+#order-dialog{padding:16px}
+#order-dialog .detail-head{padding:0 0 8px}
+#order-message{position:fixed;z-index:3;bottom:70px;left:50%;transform:translateX(-50%);width:max-content;max-width:90%;padding:8px 12px;border-radius:8px;background:var(--deep);color:white}
+.form-error{color:#8d3129}
+@media(max-width:400px){.tabs button{padding:8px}.order-line{gap:6px;padding:7px}.order-line img{width:46px}}
+@media print{
+ @page{size:A4 portrait;margin:12mm}
+ body:has(#order-dialog[open]){overflow:visible}
+ body:has(#order-dialog[open])> :not(#order-dialog){display:none!important}
+ #order-dialog[open]{position:static;display:block;overflow:visible;width:100%;max-height:none;border:0;box-shadow:none;padding:0;margin:0}
+ #order-dialog::backdrop{background:none}
+ #order-dialog button,#order-dialog .order-actions{display:none!important}
+ .order-line{break-inside:avoid}
+}
 </style>
 </head>
 <body>
 <header><div class="wrap"><div><h1>バンドTシャツ</h1><p>商品照合一覧</p></div><div class="inventory-count"><b>278</b> 商品</div></div></header>
 <main class="wrap">
+<nav class="tabs" aria-label="メニュー"><button data-view="catalog" aria-current="page">商品一覧</button><button data-view="create">注文を作る</button><button data-view="history">注文履歴</button></nav>
+<p id="test-note" class="test-note" hidden>ここで作る注文はすべてテスト注文です。このブラウザに保存され、仕入先には送信されません。</p>
+<section id="catalog-view">
 <div class="tools">
 <label class="searchbox"><input id="search" type="search" placeholder="品番・商品名で検索" aria-label="品番・商品名で検索" autocomplete="off" spellcheck="false"></label>
 <div class="filters" role="group" aria-label="袖丈で絞り込み">
@@ -341,12 +377,19 @@ body:has(dialog[open]){overflow:hidden}
 <button type="button" class="card" data-code="LS084" aria-label="LS084 Harley-Davidson 拡大" aria-haspopup="dialog"><img class="photo" src="images/2965b04595fdfb10b9f71ac9ba267eca07fe3212aa0650851329f3266c855ec2.jpg" alt="" loading="lazy" decoding="async"><span class="info"><span class="meta"><span class="code">LS084</span><span class="sleeve long">長袖</span></span><span class="name">Harley-Davidson</span></span></button>
 <button type="button" class="card" data-code="LS085" aria-label="LS085 Korn 拡大" aria-haspopup="dialog"><img class="photo" src="images/2372bfe8f01f2ee8e11102fdb07247c6a0c2a65d830003cd98d98bd3deccfcd2.jpg" alt="" loading="lazy" decoding="async"><span class="info"><span class="meta"><span class="code">LS085</span><span class="sleeve long">長袖</span></span><span class="name">Korn</span></span></button></div>
 <p id="empty" hidden>該当する商品がありません。品番や袖丈を確認してください。</p>
+<button class="action primary" id="cart-bar" hidden>カートを確認</button>
+</section>
+<section id="history-view" hidden><h2>注文履歴</h2><p id="history-empty" class="results">このブラウザに保存したテスト注文はありません。</p><div id="history-list"></div><a class="sample" href="https://github.com/k-r-base425/order-system/blob/main/検証見本/PO-0001_見積書と写真付き注文書_試算.pdf" target="_blank" rel="noopener noreferrer">初回テスト注文の見本PDF（36点） ↗</a></section>
+<p id="order-message" role="status" hidden></p>
 </main>
 <dialog id="detail" aria-labelledby="detail-code" aria-describedby="detail-name">
 <div class="detail-head"><div><div class="meta"><h2 id="detail-code"></h2><span id="detail-sleeve" class="sleeve"></span></div><p id="detail-name"></p></div><button class="action" id="close" autofocus>閉じる</button></div>
 <img id="zoom" alt="">
+<form id="pick" hidden><label>点数<input name="qty" type="number" min="1" max="99999" step="1" value="1" inputmode="numeric" required></label><button class="action primary">カートに反映</button></form>
+<p id="pick-error" class="form-error" role="alert" hidden></p>
 <div class="detail-foot"><button class="action" id="prev">前の商品</button><span id="position"></span><button class="action" id="next">次の商品</button></div>
 </dialog>
+<dialog id="order-dialog" aria-labelledby="order-title"><div class="detail-head"><h2 id="order-title"></h2><button class="action" id="order-close">閉じる</button></div><div id="order-body"></div><p id="order-error" class="form-error" role="alert" hidden></p></dialog>
 <script>
 'use strict';
 const get = s => document.querySelector(s);
@@ -391,6 +434,7 @@ function show(card) {
   get('#position').textContent = (n + 1) + ' / ' + shown.length;
   get('#prev').disabled = n === 0;
   get('#next').disabled = n === shown.length - 1;
+  detail.dispatchEvent(new Event('productchange'));
   if (!detail.open) detail.showModal();
 }
 function step(d) {
@@ -413,6 +457,256 @@ detail.addEventListener('click', e => {
   const r = detail.getBoundingClientRect();
   if (e.target === detail && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) detail.close();
 });
+</script>
+<script>(() => {
+  'use strict';
+  const tabs = Array.from(document.querySelectorAll('[data-view]'));
+  const orderDialog = get('#order-dialog');
+  const body = get('#order-body');
+  const pick = get('#pick');
+  const products = new Map(cards.map(card => [card.dataset.code, {
+    code: card.dataset.code,
+    name: card.querySelector('.name').textContent,
+    image: card.querySelector('img').getAttribute('src')
+  }]));
+  let view = 'catalog';
+  let draft = [];
+  let dbPromise;
+  let busy = false;
+  let messageTimer;
+  let photoURLs = [];
+
+  function database() {
+    if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
+      // GitHub Pages の同一ドメインにある別アプリとは台帳を共有しない。
+      const open = indexedDB.open('band-shirt-test-orders:' + new URL('.', location.href).pathname, 1);
+      open.onupgradeneeded = () => {
+        const db = open.result;
+        db.createObjectStore('draft', {keyPath:'code'});
+        db.createObjectStore('orders', {keyPath:'id', autoIncrement:true});
+        db.createObjectStore('photos');
+      };
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    }).catch(error => { dbPromise = null; throw error; });
+    return dbPromise;
+  }
+  function read(request) {
+    return new Promise((resolve,reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  function completed(tx) {
+    return new Promise((resolve,reject) => {
+      tx.oncomplete = resolve;
+      tx.onabort = () => reject(tx.error || new Error('注文内容が変わりました。再確認してください。'));
+      tx.onerror = () => {}; // abort で確定した結果を通知する。
+    });
+  }
+  async function all(store) {
+    const db = await database();
+    return read(db.transaction(store).objectStore(store).getAll());
+  }
+  function qtyTotal(lines) { return lines.reduce((sum, line) => sum + line.qty, 0); }
+  function number(id) { return 'TEST-' + String(id).padStart(4,'0'); }
+  function dateLabel(created) { return new Date(created).toLocaleString('ja-JP',{dateStyle:'short',timeStyle:'short'}); }
+  function el(tag, text, cls) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (cls) node.className = cls;
+    return node;
+  }
+  function action(text, handler, primary = false) {
+    const btn = el('button',text,'action' + (primary ? ' primary' : ''));
+    btn.type = 'button';
+    btn.onclick = handler;
+    return btn;
+  }
+  function notice(text) {
+    const n = get('#order-message');
+    n.textContent = text; n.hidden = false;
+    clearTimeout(messageTimer);
+    messageTimer = setTimeout(() => n.hidden = true,3500);
+  }
+  function errorMessage(text) {
+    const node = orderDialog.open ? get('#order-error') : detail.open ? get('#pick-error') : get('#order-message');
+    clearTimeout(messageTimer);
+    node.textContent = text;
+    node.hidden = false;
+  }
+  async function run(fn) {
+    if (busy) return;
+    busy = true;
+    document.querySelector("main").inert = true;
+    try { await fn(); }
+    catch (error) {
+      errorMessage(error.name === 'QuotaExceededError' ? '保存容量が足りません。カートを保持しました。' :
+        (error.name === 'Error' ? error.message : '保存領域を利用できません。通常のブラウザで開き直してください。'));
+    } finally { busy = false; document.querySelector("main").inert = false; }
+  }
+  function updateBar() {
+    get('#cart-bar').textContent = 'カートを確認　' + qtyTotal(draft) + ' 点';
+  }
+  async function changeDraft(code, qty, previous) {
+    if (!Number.isInteger(qty) || qty < 0 || qty > 99999) throw new Error('点数は1〜99,999で入力してください。');
+    const db = await database();
+    const tx = db.transaction('draft','readwrite');
+    const done = completed(tx);
+    const store = tx.objectStore('draft');
+    const req = store.get(code);
+    req.onsuccess = () => {
+      if ((req.result?.qty || 0) !== previous) { tx.abort(); return; }
+      if (qty) store.put({...products.get(code),qty});
+      else store.delete(code);
+    };
+    try { await done; }
+    finally { draft = await all('draft'); updateBar(); }
+  }
+  function configurePick() {
+    pick.hidden = view !== 'create';
+    get('#pick-error').hidden = true;
+    if (!selected) return;
+    const existing = draft.find(row => row.code === selected.dataset.code)?.qty || 0;
+    pick.elements.qty.value = existing || 1;
+    pick.dataset.previous = existing;
+    pick.querySelector('button').textContent = existing ? '点数を更新' : 'カートに追加';
+  }
+  detail.addEventListener('productchange',configurePick);
+  pick.onsubmit = event => {
+    event.preventDefault();
+    run(async () => {
+      const code = selected.dataset.code;
+      await changeDraft(code,pick.elements.qty.valueAsNumber,Number(pick.dataset.previous));
+      detail.close(); notice(code + ' をカートに保存しました。');
+    });
+  };
+  function releaseURLs() { photoURLs.forEach(url => URL.revokeObjectURL(url)); photoURLs = []; }
+  orderDialog.addEventListener('close',() => { if (!orderDialog.open) releaseURLs(); });
+  orderDialog.addEventListener('cancel',event => { if (busy) event.preventDefault(); });
+  get('#order-close').onclick = () => { if (!busy) orderDialog.close(); };
+  function panel(title) {
+    releaseURLs(); body.replaceChildren(); get('#order-title').textContent = title;
+    get('#order-error').hidden = true;
+    if (!orderDialog.open) orderDialog.showModal();
+    orderDialog.scrollTop = 0;
+  }
+  function productLine(line, src) {
+    const row = el('div',undefined,'order-line');
+    const img = el('img'); img.src = src; img.alt = line.code + ' の商品写真';
+    const desc = el('div',undefined,'item-copy');
+    desc.append(el('strong',line.code),el('small',line.name));
+    row.append(img,desc,el('strong',line.qty + ' 点'));
+    return row;
+  }
+  function drawCart() {
+    panel('テスト注文の確認');
+    if (!draft.length) { body.append(el('p','カートは空です。商品を選び、点数を入力してください。')); return; }
+    for (const line of draft) {
+      const row = productLine(line,line.image);
+      const edit = action('変更',() => {
+        orderDialog.close();
+        const card = cards.find(c => c.dataset.code === line.code);
+        if (card) {
+          search.value = line.code;
+          filters.find(b => b.dataset.filter === 'all').click();
+          show(card);
+        }
+      });
+      const remove = action('削除',() => run(async () => {
+        await changeDraft(line.code,0,line.qty); drawCart();
+      }));
+      row.append(edit,remove); body.append(row);
+    }
+    body.append(el('p','合計 ' + qtyTotal(draft) + ' 点'));
+    body.append(el('p','この端末にテスト注文として保存します。仕入先への送信はありません。','test-note'));
+    const save = action('テスト注文を確定',() => run(async () => {
+      save.disabled = true; save.textContent = '保存中…';
+      try {
+        const order = await checkout(draft);
+        await changeView('history');
+        await showOrder(order);
+      } finally { save.disabled = false; save.textContent = 'テスト注文を確定'; }
+    }),true);
+    body.append(save);
+  }
+  // 注文時の写真を端末に保存する。画像が差し替わっても履歴は同じ写真を使う。
+  async function checkout(lines) {
+    if (!lines.length) throw new Error('商品を選んでください。');
+    const db = await database();
+    const photos = new Map();
+    if (location.protocol !== 'file:') {
+      for (const src of new Set(lines.map(line => line.image))) {
+        const exists = await read(db.transaction('photos').objectStore('photos').getKey(src));
+        if (exists !== undefined) continue;
+        const resp = await fetch(src);
+        if (!resp.ok || !resp.headers.get('Content-Type')?.startsWith('image/')) throw new Error('商品写真を取得できません。通信を確認し、もう一度お試しください。');
+        photos.set(src,await resp.blob());
+      }
+    }
+    const tx = db.transaction(['orders','draft','photos'],'readwrite');
+    const done = completed(tx);
+    const current = tx.objectStore('draft').getAll();
+    const order = {type:'test',created:new Date().toISOString(),items:lines,total:qtyTotal(lines)};
+    current.onsuccess = () => {
+      if (JSON.stringify(current.result) !== JSON.stringify(lines)) { tx.abort(); return; }
+      photos.forEach((blob,key) => tx.objectStore('photos').put(blob,key));
+      const req = tx.objectStore('orders').add(order);
+      req.onsuccess = () => { order.id = req.result; };
+      tx.objectStore('draft').clear();
+    };
+    try { await done; } catch (error) {
+      draft = await all('draft'); updateBar(); drawCart(); throw error;
+    }
+    draft = []; updateBar();
+    return order;
+  }
+  async function showOrder(order) {
+    panel('テスト注文 ' + number(order.id));
+    body.append(el('p',dateLabel(order.created) + '　合計 ' + order.total + ' 点'));
+    const db = await database();
+    for (const item of order.items) {
+      const blob = await read(db.transaction('photos').objectStore('photos').get(item.image));
+      const url = blob ? URL.createObjectURL(blob) : item.image;
+      if (blob) photoURLs.push(url);
+      body.append(productLine(item,url));
+    }
+    const buttons = el('div',undefined,'order-actions');
+    buttons.append(action('印刷・PDF保存',() => window.print()));
+    body.append(buttons);
+  }
+  async function history() {
+    const list = get('#history-list');
+    const orders = await all('orders');
+    list.replaceChildren();
+    get('#history-empty').hidden = orders.length > 0;
+    for (const order of orders.reverse()) {
+      const btn = el('button',undefined,'history-row');
+      const label = el('span','テスト注文 ' + number(order.id));
+      label.append(el('small',dateLabel(order.created)));
+      btn.append(label,el('strong',order.total + ' 点　›'));
+      btn.onclick = () => run(() => showOrder(order));
+      list.append(btn);
+    }
+  }
+  async function changeView(next) {
+    view = next;
+    tabs.forEach(b => {
+      if (b.dataset.view === next) b.setAttribute('aria-current','page');
+      else b.removeAttribute('aria-current');
+    });
+    get('#test-note').hidden = next === 'catalog';
+    get('#catalog-view').hidden = next === 'history';
+    get('#history-view').hidden = next !== 'history';
+    get('#cart-bar').hidden = next !== 'create';
+    get('#order-message').hidden = true;
+    if (next === 'create') { draft = await all('draft'); updateBar(); }
+    if (next === 'history') await history();
+    window.scrollTo(0,0);
+  }
+  tabs.forEach(b => b.onclick = () => run(() => changeView(b.dataset.view)));
+  get('#cart-bar').onclick = () => run(async () => { draft = await all('draft'); updateBar(); drawCart(); });
+})();
 </script>
 </body>
 </html>
