@@ -115,6 +115,39 @@ body:has(dialog[open]){overflow:hidden}
 .invoice-qty button{width:44px;padding:0;touch-action:manipulation}
 .template-link{display:inline-flex;align-items:center;min-height:44px;font-size:14px;text-underline-offset:3px}
 @media(max-width:520px){.doc-line{grid-template-columns:48px minmax(0,1fr)}.doc-line img,.invoice-line img{width:48px}.doc-line .line-cost{grid-column:2;text-align:left;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}.invoice-line{grid-template-columns:48px minmax(0,1fr)}.invoice-qty{grid-column:1/-1;justify-content:flex-end}.invoice-qty strong{margin-left:auto}.order-actions .action{white-space:normal}}
+.doc-options{grid-column:1/-1}.doc-options summary{cursor:pointer;padding:8px 0}
+.financial-sheet{color:#171717;border-top-color:#202020;font-variant-numeric:tabular-nums}
+.bill-header h2{border:2px solid #202020;text-align:center;letter-spacing:.28em;margin:0;padding:5px}
+.bill-header p{text-align:right;margin:6px 0;font-size:12px}
+.bill-parties,.bill-terms{margin:12px 0;overflow-wrap:anywhere}
+.bill-parties{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bill-parties dt,.bill-terms dt{font-size:12px}
+.bill-parties dd,.bill-terms dd{margin:0}
+.bill-parties dd{font-weight:700;border-bottom:1px solid #555;min-height:1.6em}
+.bill-terms{max-width:28em;border:1px solid #555}
+.bill-terms>div,.bill-amount{display:grid;grid-template-columns:7em 1fr}
+.bill-terms>div+div{border-top:1px solid #777}
+.bill-terms dt,.bill-amount span,.bill-notes strong,.bill-lines thead th{background:#252525;color:white;font-weight:700;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.bill-terms dt,.bill-terms dd,.bill-amount>*{padding:3px 8px}
+.bill-amount{border:2px solid #252525;margin:16px 0;max-width:30em;align-items:stretch}
+.bill-amount span{display:grid;align-items:center}
+.bill-amount strong{text-align:right;font-size:1.2em}
+.bill-lines{width:100%;border-collapse:collapse;font-size:14px}
+.bill-lines th,.bill-lines td{padding:5px;border:1px solid #777}
+.bill-lines td{text-align:right;vertical-align:middle}
+.bill-lines td:first-child{text-align:left;width:52%;overflow-wrap:anywhere}
+.bill-lines td:first-child>*{display:block}
+.bill-lines small{color:#555}.bill-lines tr,.photo-item{break-inside:avoid}
+.bill-total{text-align:right;border:1px solid #555;padding:6px 8px;font-weight:700}
+.bill-notes{border:1px solid #555;margin-top:16px;break-inside:avoid}
+.bill-notes strong{display:block;padding:2px 8px;font-size:12px}.bill-notes p{padding:8px;overflow-wrap:anywhere}
+.photo-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.photo-item{min-width:0;margin:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.photo-item img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#f4f3ed}
+.photo-item figcaption{padding:8px;overflow-wrap:anywhere}
+.photo-item figcaption div{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.photo-item figcaption span,.photo-item figcaption small{display:block;font-size:13px}
+@media screen and (max-width:520px){.bill-lines{font-size:12px}.bill-lines td,.bill-lines th{padding:3px}.bill-lines td:first-child{width:43%}.photo-items{gap:6px}.photo-item figcaption{padding:5px}.invoice-qty{flex-wrap:wrap}}
 @media print{
  @page{size:A4 portrait;margin:12mm}
  :root,body{background:#fff}
@@ -133,6 +166,12 @@ body:has(dialog[open]){overflow:hidden}
  #print-documents .line-cost{display:block;grid-column:auto;text-align:right}
  #print-documents .doc-total,#print-documents .document-facts{break-inside:avoid}
  #print-documents h3{break-after:avoid}
+ #print-documents .bill-lines{font-size:9pt}
+ #print-documents .bill-lines thead{display:table-header-group}
+ #print-documents .photo-item img{height:38mm}
+ #print-documents .photo-item figcaption{padding:2mm}
+ #print-documents .photo-items{gap:3mm}
+ #print-documents .financial-sheet{border-top:0}
 }
 </style>
 </head>
