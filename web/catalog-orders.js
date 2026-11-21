@@ -238,7 +238,8 @@
     if (!draft.length) { body.append(el('p','カートは空です。商品を選び、点数を選んでください。')); return; }
     for (const line of [...draft].sort(byCode)) {
       const row = productLine(line,line.image);
-      row.querySelector('.item-copy').append(el('small','単価 ' + yen(currentPrice(line.code).unitPrice)));
+      const price = currentPrice(line.code).unitPrice;
+      row.querySelector('.item-copy').append(el('small','単価 ' + yen(price)),el('small','小計 ' + yen(line.qty * price)));
       const edit = action('変更',() => {
         orderDialog.close();
         const card = cards.find(c => c.dataset.code === line.code);
