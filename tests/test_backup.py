@@ -61,16 +61,19 @@ class BackupTest(unittest.TestCase):
 
     def test_keeps_latest(self):
         self.make_db()
+        self.folder.mkdir()
+        (self.folder / "memo.txt").write_text("keep")
+        lookalike = self.folder / "orders-2026-10-01.sqlite3.bak"
+        lookalike.write_text("keep")
         start = date(2026, 11, 1)
         for i in range(15):
             backup_ledger(self.db, self.folder, start + timedelta(days=i))
-        (self.folder / "memo.txt").write_text("keep")
-        backup_ledger(self.db, self.folder, start + timedelta(days=14))
         names = sorted(p.name for p in self.folder.glob("orders-*.sqlite3"))
         self.assertEqual(len(names), 14)
         self.assertNotIn("orders-2026-11-01.sqlite3", names)
         self.assertIn("orders-2026-11-15.sqlite3", names)
         self.assertTrue((self.folder / "memo.txt").exists())
+        self.assertTrue(lookalike.exists())
 
     def test_missing_db(self):
         self.assertIsNone(backup_ledger(self.db, self.folder, date(2026, 11, 21)))
