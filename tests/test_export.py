@@ -41,16 +41,27 @@ class ExportTest(unittest.TestCase):
         self.assertNotIn("レア", page)
 
     def test_placeholders_not_reexpanded(self):
+        name = "%%COUNT%%</script>%%PRICE_CLASSES%%%%PREVIOUS_CODES%%%%CARDS%%"
         store = make_store(self.tmp / "ledger", ["SS008", "LS075"])
         with store.transaction(True) as con:
-            con.execute("UPDATE products SET name=? WHERE code='SS008'", ("%%COUNT%%</script>",))
+            con.execute("UPDATE products SET name=? WHERE code='SS008'", (name,))
         store.export(self.out)
         page = self.page()
-        self.assertIn(html.escape("%%COUNT%%</script>", quote=True), page)
+        self.assertIn(html.escape(name, quote=True), page)
         self.assertIn("<b>2</b> 商品", page)
         self.assertIn("2 件を表示", page)
+        match = re.search(r'<script type="application/json" id="price-classes">(.*?)</script>', page, re.S)
+        self.assertEqual(json.loads(match.group(1)), {"SS": 2000, "LS": 2900})
         template = TEMPLATE.read_text(encoding="utf-8")
         self.assertEqual(page.count("<script"), template.count("<script"))
+
+    def test_embedded_json_escapes_lt(self):
+        from catalog_output import _embedded_json
+        value = {"a": "</script><!--"}
+        text = _embedded_json(value)
+        self.assertNotIn("<", text)
+        self.assertIn(r"\u003c", text)
+        self.assertEqual(json.loads(text), value)
 
     def test_no_private_data(self):
         store = make_store(self.tmp / "ledger", ["SS008", "LS075"])
