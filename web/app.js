@@ -3,7 +3,7 @@
 const $ = selector => document.querySelector(selector);
 const $$ = selector => Array.from(document.querySelectorAll(selector));
 const dialog = $("#dialog");
-const state = {products: [], draft: {}, orders: [], revision: null};
+const state = {products: [], draft: {}, orders: [], revision: null, price_classes: []};
 let productsByCode = new Map();
 let sleeveFilter = "";
 let editMode = "replace";
@@ -69,6 +69,81 @@ async function refresh() {
   renderCards();
   renderCart();
   renderHistory();
+  renderPriceClasses();
+}
+
+const PRICE_SAVED = "単価を保存しました。照合用一覧を再出力すると、このPCで確認できます。確定済みの注文の単価は変わりません。";
+
+function yen(value) {
+  return Number(value).toLocaleString("ja-JP") + "円";
+}
+
+function renderPriceClasses() {
+  const list = $("#price-class-list");
+  list.replaceChildren(...state.price_classes.map(item => {
+    const form = document.createElement("form");
+    form.className = "pc-row";
+    form.dataset.id = item.id;
+    const labelField = document.createElement("label");
+    labelField.append("区分名");
+    const labelInput = document.createElement("input");
+    labelInput.type = "text";
+    labelInput.maxLength = 40;
+    labelInput.required = true;
+    labelInput.value = item.label;
+    labelField.append(labelInput);
+    const priceField = document.createElement("label");
+    priceField.append("単価（円）");
+    const priceInput = document.createElement("input");
+    priceInput.type = "number";
+    priceInput.min = "0";
+    priceInput.max = "9999999";
+    priceInput.step = "1";
+    priceInput.required = true;
+    priceInput.value = item.unit_price;
+    priceField.append(priceInput);
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.className = "secondary";
+    save.textContent = "保存";
+    form.append(labelField, priceField, save);
+    if (item.id === "SS" || item.id === "LS") {
+      const note = document.createElement("small");
+      note.className = "pc-note";
+      note.textContent = "袖の標準";
+      form.append(note);
+    }
+    form.onsubmit = event => {
+      event.preventDefault();
+      savePriceClass({id: item.id, label: labelInput.value.trim(), unit_price: Number(priceInput.value)});
+    };
+    return form;
+  }));
+  const select = $("#assign-class");
+  select.replaceChildren(new Option("袖の標準（半袖・長袖）", ""),
+    ...state.price_classes.map(item =>
+      new Option(item.label + "  " + yen(item.unit_price), item.id)));
+  const codeSelect = $("#assign-code");
+  const previousCode = codeSelect.value;
+  codeSelect.replaceChildren(...state.products.map(product =>
+    new Option(product.code + "  " + product.name, product.code)));
+  if (productsByCode.has(previousCode)) codeSelect.value = previousCode;
+  syncAssignClass();
+}
+
+function syncAssignClass() {
+  const product = productsByCode.get($("#assign-code").value);
+  const wanted = product?.assigned_price_class || "";
+  const select = $("#assign-class");
+  select.value = Array.from(select.options).some(option => option.value === wanted) ? wanted : "";
+}
+
+function savePriceClass(body) {
+  run(async () => {
+    await api("/api/price-classes", {...body, revision: state.revision});
+    await refresh();
+    message(PRICE_SAVED);
+  });
 }
 
 async function run(action) {
@@ -343,6 +418,30 @@ $("#product-form").onsubmit = event => {
     await refresh();
     const code = fields.code || result.code || state.products.find(item => !previous.has(item.code))?.code;
     message((code || "商品") + " を保存しました。照合用一覧を再出力すると更新を反映できます。");
+  });
+};
+$("#price-class-new").onsubmit = event => {
+  event.preventDefault();
+  const body = {label: $("#pc-new-label").value.trim(), unit_price: Number($("#pc-new-price").value)};
+  run(async () => {
+    await api("/api/price-classes", {...body, revision: state.revision});
+    $("#pc-new-label").value = "";
+    $("#pc-new-price").value = "";
+    await refresh();
+    message(PRICE_SAVED);
+  });
+};
+$("#assign-code").onchange = syncAssignClass;
+$("#price-assign-form").onsubmit = event => {
+  event.preventDefault();
+  const code = $("#assign-code").value;
+  const priceClass = $("#assign-class").value || null;
+  run(async () => {
+    await api("/api/products/price-class", {code, price_class: priceClass, revision: state.revision});
+    await refresh();
+    $("#assign-code").value = code;
+    syncAssignClass();
+    message(code + " の単価区分を保存しました。確定済みの注文の単価は変わりません。");
   });
 };
 $("#export").onclick = () => run(async () => {

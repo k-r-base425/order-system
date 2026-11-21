@@ -72,6 +72,23 @@
         </form>
       </section>
       <section class="box">
+        <h2>単価区分</h2>
+        <div id="price-class-list" class="pc-list"></div>
+        <form id="price-class-new" class="pc-row pc-new">
+          <label>区分名<input id="pc-new-label" type="text" maxlength="40" required></label>
+          <label>単価（円）<input id="pc-new-price" type="number" min="0" max="9999999" step="1" required></label>
+          <button class="secondary" type="submit">区分を追加</button>
+        </form>
+      </section>
+      <section class="box">
+        <h2>商品の単価区分</h2>
+        <form id="price-assign-form" class="pc-assign">
+          <label>商品を選択<select id="assign-code" required></select></label>
+          <label>単価区分<select id="assign-class"></select></label>
+          <button class="primary" type="submit">割り当てる</button>
+        </form>
+      </section>
+      <section class="box">
         <h2>照合用一覧の更新</h2>
         <p>現在の台帳から、スマホで閲覧する商品一覧と写真をローカルに出力します。</p>
         <button id="export" class="secondary">照合用一覧を再出力</button>

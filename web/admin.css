@@ -84,8 +84,8 @@ h2{font-size:21px;line-height:1.35}
 .box h2{margin-bottom:17px}
 .box p{color:var(--muted);margin-bottom:18px}
 .box a{display:block;margin-top:14px}
-#product-form label,.qty-label{display:grid;gap:6px;margin:14px 0;font-size:14px;font-weight:650}
-#product-form :is(select,input),.qty-label input{width:100%;min-height:43px;border:1px solid #adbcad;background:#fff;border-radius:7px;padding:8px 10px;font-size:16px}
+#product-form label,#price-assign-form label,.pc-row label,.qty-label{display:grid;gap:6px;margin:14px 0;font-size:14px;font-weight:650}
+#product-form :is(select,input),#price-assign-form select,.pc-row input,.qty-label input{width:100%;min-height:43px;border:1px solid #adbcad;background:#fff;border-radius:7px;padding:8px 10px;font-size:16px}
 .file-preview{width:min(100%,210px);height:156px;object-fit:contain;margin:12px 0;background:var(--paper)}
 dialog{margin:auto;border:1px solid var(--line);padding:0;border-radius:15px;max-width:min(620px,calc(100vw - 26px));width:100%;max-height:88dvh;color:var(--ink);box-shadow:0 10px 66px #142b2238}
 dialog::backdrop{background:#10231eca}
@@ -96,6 +96,13 @@ dialog::backdrop{background:#10231eca}
 .dialog-photo{width:100%;height:min(42vh,350px);object-fit:contain;display:block;background:#efefe9;border-radius:8px}
 .detail-heading{display:flex;align-items:center;gap:9px;margin:12px 0 0}
 .qty-label input{max-width:170px}
+.pc-row{display:grid;grid-template-columns:minmax(0,1fr) 130px auto;gap:10px;align-items:end;margin-bottom:6px}
+.pc-row label{margin:8px 0}
+.pc-row button{min-height:43px}
+.pc-note{grid-column:1/-1;color:var(--muted);margin-top:-6px}
+.pc-new{margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}
+.pc-assign button{margin-top:4px}
+@media(max-width:740px){.pc-row{grid-template-columns:1fr 1fr}.pc-row button{grid-column:1/-1}}
 .dialog-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:18px}
 .order-row{grid-template-columns:64px 1fr auto;padding:10px 0;align-items:center}
 .order-summary{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-top:1px solid var(--line);margin-top:4px}
