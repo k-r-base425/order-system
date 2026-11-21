@@ -260,7 +260,8 @@ class Store:
         from catalog_output import export_catalog
         with self.transaction() as con:
             products = self.products(con)
-            export_catalog(products, lambda digest: self.read_photo(con, digest), destination)
+            export_catalog(products, lambda digest: self.read_photo(con, digest), destination,
+                           list_price_classes(con))
         return {"count":len(products)}
 
 

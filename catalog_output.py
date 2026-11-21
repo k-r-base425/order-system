@@ -22,6 +22,8 @@ from reportlab.pdfgen import canvas
 
 _DIGEST = re.compile(r"[a-f0-9]{64}")
 _CODE = re.compile(r"(SS|LS)[0-9]{3,}")
+_CLASS_ID = re.compile(r"(SS|LS|PC[0-9]{2,})")
+_MARKERS = re.compile(r"%%(COUNT|CARDS|PRICE_CLASSES|PREVIOUS_PHOTOS|PREVIOUS_CODES)%%")
 _TEMPLATE = Path(__file__).with_name("web") / "catalog.html"
 _FONT = "BandOrderJapanese"
 _FONT_LOCK = threading.Lock()
@@ -52,9 +54,22 @@ def _atomic_file(path, content):
             tmp.unlink(missing_ok=True)
 
 
-def export_catalog(products, image_bytes, destination):
+def _embedded_json(value):
+    """<script> 内に埋め込めるよう、`<` をエスケープしたJSONにする。"""
+    return json.dumps(value, separators=(",", ":")).replace("<", r"\u003c")
+
+
+def export_catalog(products, image_bytes, destination, price_classes):
     """専用ディレクトリに現在の品番、表示名と公開用JPEGのみを出力する。"""
     catalog = list(products)
+    table = {}
+    for row in price_classes:
+        if not _CLASS_ID.fullmatch(str(row["id"])):
+            raise ValueError("一覧に出力できない単価区分があります。")
+        table[row["id"]] = row["unit_price"]
+    for product in catalog:
+        if product["price_class"] not in table:
+            raise ValueError("一覧に出力できない単価区分があります。")
     for product in catalog:
         if not _DIGEST.fullmatch(product["image"]) or not _CODE.fullmatch(product["code"]):
             raise ValueError("一覧に出力できない品番または画像番号があります。")
@@ -84,6 +99,7 @@ def export_catalog(products, image_bytes, destination):
             lazy = ' loading="lazy"' if index >= 8 else ""
             cards.append(
                 f'<button type="button" class="card" data-code="{code}" '
+                f'data-price-class="{product["price_class"]}" '
                 f'aria-label="{code} {name} 拡大" aria-haspopup="dialog">'
                 f'<img class="photo" src="images/{filename}" alt=""{lazy} decoding="async">'
                 f'<span class="info"><span class="meta"><span class="code">{code}</span>'
@@ -102,9 +118,11 @@ def export_catalog(products, image_bytes, destination):
         # file:// で確定した旧注文には、ブラウザ側に写真のコピーがない。
         aliases = {f'images/{row["旧写真ID"]}.jpg': f'images/{images[row["残した旧品番"]]}.jpg'
                    for row in entries if row["旧写真ID"] != images[row["残した旧品番"]]}
-        template = template.replace("%%PREVIOUS_PHOTOS%%", json.dumps(aliases, separators=(",", ":")))
-        template = template.replace("%%PREVIOUS_CODES%%", json.dumps(previous, separators=(",", ":")))
-        page = template.replace("%%COUNT%%", str(len(catalog))).replace("%%CARDS%%", "\n".join(cards))
+        values = {"COUNT": str(len(catalog)), "CARDS": "\n".join(cards),
+                  "PRICE_CLASSES": _embedded_json(table),
+                  "PREVIOUS_PHOTOS": _embedded_json(aliases),
+                  "PREVIOUS_CODES": _embedded_json(previous)}
+        page = _MARKERS.sub(lambda m: values[m.group(1)], template)
         _atomic_file(destination / "index.html", page.encode("utf-8"))
         # 差し替え前の写真は配布フォルダから外す。注文の保存領域とは独立。
         for path in image_dir.glob("*.jpg"):
