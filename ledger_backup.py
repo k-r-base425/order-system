@@ -21,7 +21,8 @@ def backup_ledger(db: Path, folder: Path, today: date, keep: int = 14) -> Path |
     handle.close()
     temp = Path(handle.name)
     try:
-        with closing(sqlite3.connect(f"file:{db}?mode=ro", uri=True)) as src, \
+        # 読み取り専用では途中終了で残ったジャーナルを戻せないため、通常接続で開く。
+        with closing(sqlite3.connect(db)) as src, \
                 closing(sqlite3.connect(temp)) as dst:
             src.backup(dst)
         os.replace(temp, target)

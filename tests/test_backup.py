@@ -1,4 +1,8 @@
+import contextlib
+import io
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import closing
@@ -99,6 +103,42 @@ class BackupTest(unittest.TestCase):
                 backup_ledger(self.db, self.folder, date(2026, 11, 21))
         self.assertEqual(list(self.folder.iterdir()), [])
         self.assertIsNotNone(backup_ledger(self.db, self.folder, date(2026, 11, 21)))
+
+    def test_hot_journal_after_crash(self):
+        self.make_db()
+        code = (
+            "import sqlite3, sys, os\n"
+            "con = sqlite3.connect(sys.argv[1], isolation_level=None)\n"
+            "con.execute('PRAGMA cache_size=1')\n"
+            "con.execute('BEGIN IMMEDIATE')\n"
+            "for i in range(200):\n"
+            "    con.execute('INSERT INTO photos VALUES(?,?)', ('crash%d' % i, b'x' * 20000))\n"
+            "os._exit(0)\n"
+        )
+        subprocess.run([sys.executable, "-c", code, str(self.db)], check=True)
+        journal = Path(str(self.db) + "-journal")
+        self.assertTrue(journal.exists())
+        result = backup_ledger(self.db, self.folder, date(2026, 11, 21))
+        self.assertTrue(result.is_file())
+        self.assertEqual(count(result, "photos"), 1)
+        self.assertEqual(count(result, "items"), 2)
+
+    def test_main_backs_up_before_migration(self):
+        self.make_db()
+        data = self.db.parent
+        argv = ["app.py", "--data", str(data), "--catalog", str(self.tmp / "catalog"),
+                "--source", str(self.tmp / "empty"), "--export-only"]
+        (self.tmp / "empty").mkdir()
+        with mock.patch.object(sys, "argv", argv), contextlib.redirect_stdout(io.StringIO()):
+            app.main()
+        today = date.today()
+        backup = data / "backup" / f"orders-{today.isoformat()}.sqlite3"
+        self.assertTrue(backup.is_file())
+        def cols(path):
+            with closing(sqlite3.connect(path)) as con:
+                return [r[1] for r in con.execute("PRAGMA table_info(products)")]
+        self.assertNotIn("price_class", cols(backup))
+        self.assertIn("price_class", cols(self.db))
 
 
 if __name__ == "__main__":
