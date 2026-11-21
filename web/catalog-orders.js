@@ -10,7 +10,8 @@
   const products = new Map(cards.map(card => [card.dataset.code, {
     code: card.dataset.code,
     name: card.querySelector('.name').textContent,
-    image: card.querySelector('img').getAttribute('src')
+    image: card.querySelector('img').getAttribute('src'),
+    priceClass: card.dataset.priceClass
   }]));
   let view = 'catalog';
   let draft = [];
@@ -77,7 +78,23 @@
     const db = await database();
     return read(db.transaction(store).objectStore(store).getAll());
   }
-  function unitPrice(code) { return code.startsWith('SS') ? 2000 : 2900; }
+  const PRICE_CLASSES = JSON.parse(get('#price-classes').textContent);
+  // カートと確定では、商品の現在の区分とその単価を組で引く。カート行に残った区分は使わない。
+  function currentPrice(code) {
+    const priceClass = products.get(code)?.priceClass ?? code.slice(0,2);
+    const unitPrice = PRICE_CLASSES[priceClass];
+    if (!Number.isInteger(unitPrice)) throw new Error(code + ' の単価区分が見つかりません。照合用一覧を出力し直してください。');
+    return {priceClass, unitPrice};
+  }
+  // 単価を持たない旧注文の補完専用。区分表の現在値では補完しない。
+  const LEGACY_PRICES = {SS: 2000, LS: 2900};
+  function legacyUnitPrice(code) { return LEGACY_PRICES[code.slice(0,2)]; }
+  // 表示用の並び：半袖→長袖、同じ袖は番号の昇順。
+  function byCode(a, b) {
+    const sleeve = code => ({SS:0, LS:1})[code.slice(0,2)] ?? 2;
+    return sleeve(a.code) - sleeve(b.code) || Number(a.code.slice(2)) - Number(b.code.slice(2)) ||
+      (a.code < b.code ? -1 : a.code > b.code ? 1 : 0);
+  }
   function issueDate(value = new Date()) {
     const date = new Date(value);
     return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
@@ -124,7 +141,7 @@
     get('#cart-bar').textContent = 'カートを確認　' + qtyTotal(draft) + ' 点';
   }
   async function changeDraft(code, qty, previous) {
-    if (!Number.isInteger(qty) || qty < 0 || qty > 99999) throw new Error('点数は1〜99,999で入力してください。');
+    if (!Number.isInteger(qty) || qty < 0 || qty > 99999) throw new Error('点数は0〜99,999で入力してください。');
     const db = await database();
     const tx = db.transaction('draft','readwrite');
     const done = completed(tx);
@@ -158,7 +175,7 @@
     get('#pick-back').hidden = get('#pick-save').hidden = !review;
     get('#pick-amount').hidden = !review;
     if (review) {
-      get('#pick-amount strong').textContent = yen(pickQty * unitPrice(selected.dataset.code));
+      get('#pick-amount strong').textContent = yen(pickQty * currentPrice(selected.dataset.code).unitPrice);
       get('#pick-save').textContent = previousQty ? 'カートの点数を更新' : 'カートに追加';
       if (previousQty) get('#pick-title').textContent = '変更内容の確認';
     }
@@ -219,8 +236,9 @@
   function drawCart() {
     panel('テスト注文の確認');
     if (!draft.length) { body.append(el('p','カートは空です。商品を選び、点数を選んでください。')); return; }
-    for (const line of draft) {
+    for (const line of [...draft].sort(byCode)) {
       const row = productLine(line,line.image);
+      row.querySelector('.item-copy').append(el('small','単価 ' + yen(currentPrice(line.code).unitPrice)));
       const edit = action('変更',() => {
         orderDialog.close();
         const card = cards.find(c => c.dataset.code === line.code);
@@ -235,7 +253,7 @@
       }));
       row.append(edit,remove); body.append(row);
     }
-    const total = draft.reduce((sum,line) => sum + line.qty * unitPrice(line.code),0);
+    const total = draft.reduce((sum,line) => sum + line.qty * currentPrice(line.code).unitPrice,0);
     body.append(el('p','合計 ' + qtyTotal(draft) + ' 点　' + yen(total),'doc-total'));
     const contacts = contactFields({});
     body.append(contacts.group);
@@ -269,7 +287,10 @@
     const done = completed(tx);
     const current = tx.objectStore('draft').getAll();
     const created = new Date().toISOString();
-    const items = lines.map(item => ({...item, unitPrice:unitPrice(item.code)}));
+    const items = lines.map(item => {
+      const {priceClass, unitPrice} = currentPrice(item.code);
+      return {...item, priceClass, unitPrice};
+    });
     const order = {type:'test',created, date:issueDate(created), ...contacts, items,total:qtyTotal(items)};
     current.onsuccess = () => {
       if (JSON.stringify(current.result) !== JSON.stringify(lines)) { tx.abort(); return; }

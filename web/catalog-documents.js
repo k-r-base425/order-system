@@ -41,7 +41,7 @@
   function docNumber(prefix,id) { return prefix + '-TEST-' + String(id).padStart(4,'0'); }
   function orderDate(order) { return order.date || issueDate(order.created); }
   function pricedItems(order) {
-    return order.items.map(line => ({...line,unitPrice:line.unitPrice ?? unitPrice(line.code)}));
+    return order.items.map(line => ({...line,unitPrice:line.unitPrice ?? legacyUnitPrice(line.code)}));
   }
   function amount(lines) { return lines.reduce((sum,line) => sum + line.qty * line.unitPrice,0); }
 
@@ -102,9 +102,9 @@
       heading.append(th);
     }
     const rows = table.createTBody();
-    for (const item of lines) {
+    for (const item of [...lines].sort(byCode)) {
       const row = rows.insertRow();
-      row.insertCell().append(el('strong',item.code),el('span',item.name),el('small',date));
+      row.insertCell().append(el('strong',item.code),el('span',item.name));
       for (const value of [item.qty,item.unitPrice,item.qty * item.unitPrice]) {
         row.insertCell().textContent = value.toLocaleString('ja-JP');
       }
@@ -127,7 +127,7 @@
     fact(facts,'宛名',(invoice || order).recipient);
     page.append(el('small','テスト注文'),el('h2',invoice ? '画像付き注文確定リスト' : '画像付き注文票'),facts);
     const list = el('div',undefined,'photo-items');
-    for (const item of lines) {
+    for (const item of [...lines].sort(byCode)) {
       const card = el('figure',undefined,'photo-item');
       const caption = el('figcaption');
       const top = el('div');
@@ -219,7 +219,7 @@
       total.textContent = '見積合計 ' + yen(quotedTotal) + ' ／ 請求合計 ' + qtyTotal(lines).toLocaleString('ja-JP') + ' 点　' + yen(amount(lines));
       save.disabled = !qtyTotal(lines);
     };
-    for (const line of lines) {
+    for (const line of [...lines].sort(byCode)) {
       const row = el('div',undefined,'invoice-line');
       const copy = el('div',undefined,'item-copy');
       copy.append(el('strong',line.code),el('small',line.name),el('small','見積 ' + line.qty + ' 点　単価 ' + yen(line.unitPrice)));
