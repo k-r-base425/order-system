@@ -22,6 +22,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from catalog_names import READINGS, catalog_name
 from catalog_numbers import renumber_reviewed_catalog
+from pricing import assign_price_class, list_price_classes, migrate_price_classes, save_price_class
 
 ROOT = Path(__file__).resolve().parent
 MAX_IMAGE = 12 * 1024 * 1024
@@ -84,6 +85,8 @@ class Store:
         self.db = folder / "orders.sqlite3"
         with closing(self.connect()) as con:
             con.executescript(SCHEMA)
+        with self.transaction(True) as con:
+            migrate_price_classes(con)
 
     def connect(self):
         con = sqlite3.connect(self.db, timeout=15)
@@ -125,7 +128,7 @@ class Store:
                         raise ValueError(f"品番を取込できません: {path.name}")
                     expected.remove(code)
                     digest = self.save_photo(con, normalized_photo(path.read_bytes()))
-                    con.execute("INSERT INTO products VALUES(?,?,?,?,?)",
+                    con.execute("INSERT INTO products (code,sleeve,number,name,image) VALUES(?,?,?,?,?)",
                                 (code, sleeve, int(code[2:]), catalog_name(name), digest))
 
             return renumber_reviewed_catalog(con)
@@ -133,7 +136,9 @@ class Store:
     @staticmethod
     def products(con):
         return [dict(row) for row in con.execute(
-            "SELECT code,name,image FROM products ORDER BY sleeve DESC,number")]
+            """SELECT code,name,image,COALESCE(products.price_class,sleeve) AS price_class,
+               products.price_class AS assigned_price_class
+               FROM products ORDER BY sleeve DESC,number""")]
 
     @staticmethod
     def draft(con):
@@ -152,7 +157,8 @@ class Store:
             orders = [dict(row) for row in con.execute(
                 "SELECT id,created,SUM(qty) AS total FROM orders JOIN items ON order_id=id GROUP BY id ORDER BY id DESC")]
             return dict(products=with_urls(self.products(con)), draft=self.draft(con),
-                        revision=self.revision(con), orders=orders)
+                        revision=self.revision(con), orders=orders,
+                        price_classes=list_price_classes(con))
 
     def update_draft(self, data):
         qty, code = data.get("qty"), data.get("code")
@@ -168,6 +174,26 @@ class Store:
                 con.execute("DELETE FROM draft WHERE code=?", (code,))
             con.execute("UPDATE state SET revision=revision+1")
             return dict(revision=self.revision(con), draft=self.draft(con))
+
+    def pricing_result(self, con):
+        return dict(revision=self.revision(con), price_classes=list_price_classes(con),
+                    products=with_urls(self.products(con)))
+
+    def update_price_class(self, data):
+        with self.transaction(True) as con:
+            self.check_revision(con, data.get("revision"))
+            save_price_class(con, data)
+            con.execute("UPDATE state SET revision=revision+1")
+            return self.pricing_result(con)
+
+    def set_product_price_class(self, data):
+        with self.transaction(True) as con:
+            self.check_revision(con, data.get("revision"))
+            if "price_class" not in data:
+                raise ValueError("単価区分を選んでください。")
+            assign_price_class(con, data.get("code"), data["price_class"])
+            con.execute("UPDATE state SET revision=revision+1")
+            return self.pricing_result(con)
 
     def confirm(self, data):
         with self.transaction(True) as con:
@@ -226,7 +252,7 @@ class Store:
                     raise ValueError("袖と商品名（120文字以内）を入力してください。")
                 number = con.execute("SELECT COALESCE(MAX(number),0)+1 FROM products WHERE sleeve=?", (sleeve,)).fetchone()[0]
                 code = f"{sleeve}{number:03}"
-                con.execute("INSERT INTO products VALUES(?,?,?,?,?)", (code,sleeve,number,catalog_name(name.strip()),digest))
+                con.execute("INSERT INTO products (code,sleeve,number,name,image) VALUES(?,?,?,?,?)", (code,sleeve,number,catalog_name(name.strip()),digest))
             con.execute("UPDATE state SET revision=revision+1")
             return {"code": code}
 
@@ -330,7 +356,9 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/api/export":
                 with self.server.export_lock:
                     return self.json(store.export(self.server.catalog))
-            fn = {"/api/draft":store.update_draft, "/api/orders":store.confirm, "/api/products":store.change_product}.get(self.path)
+            fn = {"/api/draft":store.update_draft, "/api/orders":store.confirm, "/api/products":store.change_product,
+                  "/api/price-classes":store.update_price_class,
+                  "/api/products/price-class":store.set_product_price_class}.get(self.path)
             if fn is None:
                 return self.json({"error":"対象が見つかりません。"},404)
             self.json(fn(data))

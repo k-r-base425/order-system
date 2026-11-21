@@ -45,7 +45,7 @@ def renumber_reviewed_catalog(con):
             if hashlib.sha256(photo).hexdigest() != digest:
                 raise ValueError(f"{code} の商品写真を確認してください。")
             con.execute("INSERT OR IGNORE INTO photos VALUES(?,?)", (digest, photo))
-        con.execute("INSERT INTO products VALUES(?,?,?,?,?)",
+        con.execute("INSERT INTO products (code,sleeve,number,name,image) VALUES(?,?,?,?,?)",
                     (code, code[:2], int(code[2:]), row["商品名"], digest))
     con.executemany("INSERT INTO draft VALUES(?,?)", quantities.items())
     con.execute("UPDATE state SET revision=revision+1")
