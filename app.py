@@ -4,7 +4,7 @@ import base64
 import binascii
 import errno
 from contextlib import closing, contextmanager
-from datetime import datetime
+from datetime import date, datetime
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
@@ -21,6 +21,7 @@ import webbrowser
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from catalog_names import READINGS, catalog_name
+from ledger_backup import backup_ledger
 from catalog_numbers import renumber_reviewed_catalog
 from pricing import assign_price_class, list_price_classes, migrate_price_classes, save_price_class
 
@@ -388,6 +389,7 @@ def main():
     parser.add_argument("--export-only",action="store_true")
     parser.add_argument("--test",action="store_true",help="検証台帳の注文書にテスト表示を付ける")
     args = parser.parse_args()
+    backup_ledger(args.data / "orders.sqlite3", args.data / "backup", date.today())
     store = Store(args.data)
     renumbered = store.seed(args.source)
     if renumbered or args.export_only or not (args.catalog/"index.html").is_file():

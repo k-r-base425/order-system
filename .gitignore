@@ -9,6 +9,7 @@
 !/品番対応表.csv
 !/catalog_output.py
 !/pricing.py
+!/ledger_backup.py
 !/注文画面を開く.command
 !/requirements.txt
 !/tests/
