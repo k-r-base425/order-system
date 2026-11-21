@@ -9,6 +9,10 @@
 !/品番対応表.csv
 !/catalog_output.py
 !/注文画面を開く.command
+!/requirements.txt
+!/tests/
+/tests/*
+!/tests/*.py
 !/帳票ひな型.xlsx
 !/web/
 /web/*

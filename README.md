@@ -8,3 +8,13 @@
 - **注文を作る**　注文アプリはMacでローカル実行します。Python 3、Pillow、ReportLabを準備し、半袖・長袖フォルダーに元の品番付きJPEGを用意して、初回に `python3 app.py --source "/path/to/photos" --open` を実行します。下書き・注文履歴はそのMacのSQLite台帳に保存されます。
 
 見積書・請求書には [帳票ひな型](帳票ひな型.xlsx) を使います。[操作手順](使い方.md)
+
+## 準備手順
+
+```
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python3 -m unittest discover -s tests -v   # テスト
+```
+
+注文画面は `注文画面を開く.command` をダブルクリックして開きます。`.venv` があればそれを優先して使います。

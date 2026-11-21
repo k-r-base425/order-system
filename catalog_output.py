@@ -25,6 +25,17 @@ _CODE = re.compile(r"(SS|LS)[0-9]{3,}")
 _TEMPLATE = Path(__file__).with_name("web") / "catalog.html"
 _FONT = "BandOrderJapanese"
 _FONT_LOCK = threading.Lock()
+_FONT_CANDIDATES = [Path("/Library/Fonts/Arial Unicode.ttf"),
+                    Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf")]
+
+
+def japanese_font_path(candidates=None):
+    """最初に存在する日本語フォントを返す。なければ FileNotFoundError。"""
+    paths = _FONT_CANDIDATES if candidates is None else candidates
+    for path in paths:
+        if Path(path).exists():
+            return Path(path)
+    raise FileNotFoundError("日本語フォントが見つかりません: " + ", ".join(str(p) for p in paths))
 
 
 def _atomic_file(path, content):
@@ -107,7 +118,7 @@ def make_pdf(order, image_bytes):
     """確定明細のJPEGを埋め込み、最初と最後のページに注文見出しを表示する。"""
     with _FONT_LOCK:
         if _FONT not in pdfmetrics.getRegisteredFontNames():
-            pdfmetrics.registerFont(TTFont(_FONT, "/Library/Fonts/Arial Unicode.ttf"))
+            pdfmetrics.registerFont(TTFont(_FONT, str(japanese_font_path())))
 
     items = list(order["items"])
     if not items:
