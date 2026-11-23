@@ -47,6 +47,7 @@ READINGS = {
     "NOFX": "ノーエフエックス",
     "Oasis": "オアシス",
     "Ozzy Osbourne": "オジー・オズボーン",
+    "Pearl Jam": "パール・ジャム",
     "Pearl Jam & Ramones": "パール・ジャム＆ラモーンズ",
     "Pearl Jam - VS94": "パール・ジャム VS94",
     "Pink Floyd": "ピンク・フロイド",
